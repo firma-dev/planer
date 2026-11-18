@@ -79,7 +79,7 @@ const publicUser = u => ({ id: u.id, name: u.name, role: u.role || 'manager', di
 const ROLES = ['designer', 'manager', 'head'];
 const isDesigner = a => a.admin;                 // администратор (вход по коду дизайнера)
 const isHead = a => a.admin || a.role === 'head';
-const canExec = (a, t) => isHead(a) || t.assignee === a.user.id;
+const canExec = (a, t) => !!a.admin || t.assignee === a.user.id;
 const canManage = (a, t) => isHead(a) || t.createdBy === a.user.id;
 const canEdit = (a, t) => canManage(a, t) || canExec(a, t);
 const assignable = id => { const u = db.users[id]; return !!u && !u.disabled && u.role === 'designer'; };
@@ -311,7 +311,7 @@ async function api(req, res, url) {
       if (touchesContent && (t.status === 'review' || t.status === 'done')) return send(res, 403, { error: 'На проверке задачу менять нельзя' });
       if ('status' in b) {
         const to = b.status;
-        const okHead = isHead(a);
+        const okHead = !!a.admin;
         const okExec = t.assignee === a.user.id && to !== 'done' && t.status !== 'done';
         const okRequester = t.createdBy === a.user.id && ((t.status === 'review' && to === 'done') || (t.status === 'done' && to === 'work'));
         if (!okHead && !okExec && !okRequester) return send(res, 403, { error: 'Нельзя сменить статус' });

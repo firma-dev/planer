@@ -930,7 +930,7 @@ const ownerId=()=>S.mode==='local'?'local-me':(S.config&&S.config.ownerId)||null
 const isHeadUser=()=>S.isOwner||S.role==='head';
 const isDesignerUser=()=>S.isOwner||S.role==='designer';
 const isRequester=t=>t&&t.createdBy===S.me;
-const canExecT=t=>S.mode!=='server'?true:(isHeadUser()||(!!t.assignee&&t.assignee===S.me));
+const canExecT=t=>S.mode!=='server'?true:(S.isOwner||(!!t.assignee&&t.assignee===S.me));
 const canManageT=t=>S.mode!=='server'?true:(isHeadUser()||isRequester(t));
 const canReassignT=t=>S.mode==='server'&&(isHeadUser()||(isRequester(t)&&t.status==='new'));
 const amExecutor=()=>S.isOwner;
@@ -1934,7 +1934,7 @@ function sizePicker(cur,onPick){
 function renderActions(t){
   const A=D.actEl; if(!A) return; A.replaceChildren();
   if(!S.canWrite){ A.append(h('span',{class:'spacer'}),h('button',{class:'btn copy-task',onclick:e=>copyTaskLink(t,e.currentTarget)},'🔗 Ссылка на задачу')); return; }
-  const exec=canExecT(t), req=isRequester(t)||isHeadUser();
+  const exec=canExecT(t), req=isRequester(t)||S.isOwner;
   const canTake=S.mode==='server'&&!t.assignee&&isDesignerUser()&&t.status!=='done';
   const askThen=(placeholder,btnText,required,fn)=>{
     D.askOpen=true;
