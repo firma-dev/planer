@@ -1261,7 +1261,7 @@ function barChart(items,{norm,label}){
 const ymdT=ts=>ymd(new Date(ts));
 function workDays(n){ const out=[]; let d=sod(Date.now()); while(out.length<n){ const w=new Date(d).getDay(); if(w!==0&&w!==6) out.push(d); d+=DAY; } return out; }
 function busyOn(uid,day){ const b=S.config&&S.config.busy&&S.config.busy[uid]; return !!(b&&b.includes(ymdT(day))); }
-function normH(){ try{ const n=Number(localStorage.getItem('planer-norm-h')); if(n>0) return n; }catch(e){} return 6; }
+function normH(){ try{ const n=Number(localStorage.getItem('planer-norm-hours')); if(n>0) return n; }catch(e){} return 8; }
 async function toggleBusy(uid,day,on){
   try{ const c=await store.api('POST','/busy',{user:uid,date:ymdT(day),on}); store.config=Object.assign({},store.config,c); store.emitCfg(); }catch(e){ toast(errText(e)); }
 }
@@ -1302,7 +1302,7 @@ function renderLoad(m){
     sigList?h('div',{class:'sig-list'},sigList):null);
 
   // ---------- 2. неделя ----------
-  const normIn=h('input',{type:'number',min:'1',max:'12',value:N,'aria-label':'Норма часов в день',onchange:e=>{ const v=Math.max(1,Math.min(12,Number(e.target.value)||6)); try{localStorage.setItem('planer-norm-h',String(v));}catch(_){} render(); }});
+  const normIn=h('input',{type:'number',min:'1',max:'12',value:N,'aria-label':'Норма часов в день',onchange:e=>{ const v=Math.max(1,Math.min(12,Number(e.target.value)||8)); try{localStorage.setItem('planer-norm-hours',String(v));}catch(_){} render(); }});
   const cols=['over',...days,'later'];
   const colLabel=c=>c==='over'?'Просрочено':c==='later'?'Позже / без срока':(()=>{ const dt=new Date(c); return h('span',{},h('b',{},c===today?'Сегодня':WD[dt.getDay()]),' '+dt.getDate()+' '+MON[dt.getMonth()]); })();
   const grid=h('div',{class:'wk',style:'--cols:'+cols.length},h('div',{class:'wk-h wk-name'},''),...cols.map(c=>h('div',{class:'wk-h'+(c===today?' today':'')},colLabel(c))));
