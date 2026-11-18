@@ -703,7 +703,8 @@ const PRIO_NAME=Object.fromEntries(PRIOS);
 const PRIO_RANK={fire:0,normal:1};
 const SIZES=[['S',1,'около часа'],['M',3,'пара-тройка часов'],['L',5,'полдня'],['XL',8,'день и больше']];
 const SIZE_H=Object.fromEntries(SIZES.map(([k,hh])=>[k,hh]));
-const sizeLabel=k=>k&&SIZE_H[k]?`${k} · ${SIZE_H[k]} ч`:'';
+const sizeH=k=>k==='XL'?'8+ ч':SIZE_H[k]+' ч';
+const sizeLabel=k=>k&&SIZE_H[k]?`${k} · ${sizeH(k)}`:'';
 function fmtDur(ms){ if(!ms||ms<60e3) return ms?'<1 мин':'—'; const m=Math.round(ms/60e3); if(m<60) return m+' мин'; const hh=Math.round(m/60); if(hh<24) return hh+' ч'; const d=Math.floor(hh/24), r=hh%24; return d+' д'+(r?' '+r+' ч':''); }
 function tStats(t){ const st=t.stats||{}; const now=Date.now(); const live=t.status==='review'?Math.max(0,now-(t.statusAt||now)):0; return {rounds:st.rounds||0,reviewMs:(st.reviewMs||0)+live,reschedules:st.reschedules||0,onTime:t.status==='done'?(st.onTime===undefined?null:st.onTime):(isOver(t)?false:null)}; }
 const hoursOf=list=>list.reduce((a,t)=>a+(SIZE_H[t.size]||0),0);
@@ -1025,7 +1026,7 @@ function card(t){
     h('div',{class:'c-bot'},
       h('span',{class:'due '+due.cls},due.text),
       t.priority==='fire'&&t.status!=='done'?h('span',{class:'prio'},'● горит'):null,
-      t.size?h('span',{class:'size-b',title:'Оценка: '+sizeLabel(t.size)},SIZE_H[t.size]+' ч'):null,
+      t.size?h('span',{class:'size-b',title:'Оценка: '+sizeLabel(t.size)},sizeH(t.size)):null,
       S.mode==='server'
         ? (asg?h('span',{class:'ava'+(asg===S.me?' me':''),title:'Исполнитель: '+nameOf(asg)},initials(nameOf(asg))):h('span',{class:'ava none',title:'Без исполнителя'},'?'))
         : h('span',{class:'ava'+(author===S.me?' me':''),title:'Поставил(а): '+nameOf(author)},initials(nameOf(author)))));
@@ -1211,7 +1212,7 @@ function renderLoad(m){
       const rounds=d30.length?(d30.reduce((a,t)=>a+tStats(t).rounds,0)/d30.length).toFixed(1).replace('.',','):'—';
       return {k,open:open.length,openH:hoursOf(open),noSize:open.filter(t=>!t.size).length,over:open.filter(isOver).length,d30:d30.length,d30H:hoursOf(d30),ontime,rounds}; }).filter(r=>r.open||r.d30||r.k).sort((a,b)=>b.openH-a.openH||b.open-a.open);
     const lab=k=>h('span',{style:'display:inline-flex;gap:8px;align-items:center;font-weight:700'},k?h('span',{class:'ava'+(k===S.me?' me':''),style:'margin:0;width:22px;height:22px;font-size:9px'},initials(nameOf(k))):h('span',{class:'ava none',style:'margin:0;width:22px;height:22px;font-size:10px'},'?'),k?nameOf(k):'Без исполнителя');
-    return h('section',{class:'panel wide'},h('h3',{},'Загрузка дизайнеров'),h('p',{class:'cap'},'Часы — по размеру задач: S≈1 ч, M≈3 ч, L≈5 ч, XL≈8 ч. Оценку ставит дизайнер, когда берёт задачу.'),
+    return h('section',{class:'panel wide'},h('h3',{},'Загрузка дизайнеров'),h('p',{class:'cap'},'Часы — по размеру задач: S≈1 ч, M≈3 ч, L≈5 ч, XL — 8+ ч (считаем как 8). Оценку ставит дизайнер, когда берёт задачу.'),
       rows.length?h('table',{style:'box-shadow:none'},h('thead',{},h('tr',{},h('th',{},''),h('th',{class:'num'},'Открыто'),h('th',{class:'num'},'≈ часов в очереди'),h('th',{class:'num'},'Без оценки'),h('th',{class:'num'},'Просроч.'),h('th',{class:'num'},'Сдано 30 дн'),h('th',{class:'num'},'≈ часов сдано'),h('th',{class:'num'},'В срок'),h('th',{class:'num'},'Правок в ср.'))),
         h('tbody',{},rows.map(r=>h('tr',{style:'cursor:default'},h('td',{},lab(r.k)),h('td',{class:'num'},r.open),h('td',{class:'num',style:'font-weight:700'},r.openH),h('td',{class:'num',style:r.noSize?'color:var(--warn)':''},r.noSize),h('td',{class:'num',style:r.over?'color:var(--bad)':''},r.over),h('td',{class:'num'},r.d30),h('td',{class:'num'},r.d30H),h('td',{class:'num'},r.ontime),h('td',{class:'num'},r.rounds))))):h('div',{class:'empty'},'Нет данных'));
   };
@@ -1724,7 +1725,7 @@ function sizeSheet(t,onPick){
   document.body.append(wrap); requestAnimationFrame(()=>wrap.classList.add('on')); document.addEventListener('keydown',esc);
 }
 function sizePicker(cur,onPick){
-  return h('div',{class:'size-pick',role:'group','aria-label':'Размер задачи'},SIZES.map(([k,hh,txt])=>h('button',{type:'button','aria-pressed':String(cur===k),onclick:()=>onPick(k)},h('b',{},k),h('span',{class:'sz-h'},hh+' ч'),h('span',{class:'sz-t'},txt))));
+  return h('div',{class:'size-pick',role:'group','aria-label':'Размер задачи'},SIZES.map(([k,hh,txt])=>h('button',{type:'button','aria-pressed':String(cur===k),onclick:()=>onPick(k)},h('b',{},k),h('span',{class:'sz-h'},sizeH(k)),h('span',{class:'sz-t'},txt))));
 }
 function renderActions(t){
   const A=D.actEl; if(!A) return; A.replaceChildren();
