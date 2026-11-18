@@ -571,6 +571,49 @@ textarea.t-title:focus{background:var(--card);box-shadow:0 0 0 1.5px var(--ink)}
 .t-stats .live{color:var(--warn);font-weight:700}
 .tscroll{overflow-x:auto}
 .tscroll table{min-width:760px}
+
+/* ===== профиль в шапке ===== */
+.me-box{gap:8px}
+.me-id{display:flex;align-items:center;gap:10px;height:40px;padding:0 14px 0 4px;border:1px solid var(--line2);background:var(--card);border-radius:12px}
+.me-id .ava{width:32px;height:32px;font-size:11.5px;border-radius:9px;margin:0}
+.me-txt{display:flex;flex-direction:column;justify-content:center;gap:1px;line-height:1.15}
+.me-txt .me-name{font-size:13px;font-weight:700;letter-spacing:-.005em}
+.me-role{all:unset;display:flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:var(--ink3)}
+.me-role::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.me-id .me-role.r-admin{color:#1F5BFF}.me-id .me-role.r-designer{color:#1F8A57}.me-id .me-role.r-manager{color:#C2410C}.me-id .me-role.r-head{color:#7B3FC4}
+.me-id .me-role{background:none!important;padding:0!important;margin:0!important;text-transform:none!important;letter-spacing:0!important}
+.me-box .icon-btn{width:40px;height:40px;border-radius:12px}
+@media (max-width:1100px){ .me-id{padding:0 4px} }
+@media (max-width:760px){ .me-id{height:34px} .me-id .ava{width:26px;height:26px} .me-box .icon-btn{width:34px;height:34px} }
+.acc-card .me-role{display:inline-flex}
+
+/* ===== команда ===== */
+.team{display:grid;grid-template-columns:minmax(0,.8fr) repeat(var(--n),minmax(0,1fr));gap:14px;align-items:stretch}
+@media (max-width:900px){.team{grid-template-columns:1fr}}
+.tcol{background:#EBE8E1;border-radius:14px;display:flex;flex-direction:column;max-height:calc(100vh - 230px);min-height:260px;outline:2px dashed transparent;outline-offset:-2px;transition:background .15s,outline-color .15s}
+.tcol.over{background:#E2DED5;outline-color:var(--ink3)}
+.tcol-h{display:flex;align-items:center;gap:10px;padding:12px 12px 10px;border-bottom:1px solid #DEDAD1;border-radius:14px 14px 0 0;text-align:left;background:none;border-left:0;border-right:0;border-top:0;width:100%;font:inherit;color:inherit}
+button.tcol-h{cursor:pointer}
+button.tcol-h:hover{background:#E4E0D8}
+.tcol-h .ava{width:34px;height:34px;font-size:12px;border-radius:10px;margin:0;flex:none}
+.tcol-h .ava.none{border-style:dashed}
+.tcol-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.tcol-name{font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tcol-meta{font-size:11.5px;color:var(--ink3);display:flex;gap:8px;flex-wrap:wrap}
+.tcol-meta .bad{color:var(--bad);font-weight:700}
+.tcol-go{font-size:12px;font-weight:700;color:var(--ink3);white-space:nowrap}
+button.tcol-h:hover .tcol-go{color:var(--ink)}
+.tcol-body{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:14px;overscroll-behavior:contain}
+.tsec{display:flex;flex-direction:column;gap:6px}
+.tsec-h{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--ink2);padding:0 2px}
+.tsec-h .col-dot{width:7px;height:7px}
+.tsec-h .n{color:var(--ink3);font-weight:600}
+.tsec[data-st="work"] .col-dot{background:var(--soon)}
+.tsec[data-st="review"] .col-dot{background:var(--warn)}
+.tsec[data-st="done"] .col-dot{background:var(--ok)}
+.tsec-more{align-self:flex-start;font-size:12px;color:var(--ink2);background:none;border:0;padding:2px;text-decoration:underline}
+.back-chip{display:inline-flex;align-items:center;gap:8px;margin-bottom:10px}
+.back-chip .ava{margin:0;width:22px;height:22px;font-size:9px}
 </style>
 </head>
 <body>
@@ -578,6 +621,7 @@ textarea.t-title:focus{background:var(--card);box-shadow:0 0 0 1.5px var(--ink)}
   <div class="bar">
     <div class="logo"><svg class="logo-mark" viewBox="-240.8 -240.8 481.6 481.6" aria-hidden="true"><path d="M-210 -120a170 70 0 1 0 340 0a170 70 0 1 0-340 0Z" transform="translate(16.8 16.8)" fill="none" stroke="#1F5BFF" stroke-width="24"/><path d="M-210 -120a170 70 0 1 0 340 0a170 70 0 1 0-340 0Z" fill="none" stroke="#111" stroke-width="24"/><path d="M50 -40a70 170 0 1 0 140 0a70 170 0 1 0-140 0Z" fill="none" stroke="#111" stroke-width="24"/><path d="M-130 120a170 70 0 1 0 340 0a170 70 0 1 0-340 0Z" fill="none" stroke="#111" stroke-width="24"/><path d="M-190 40a70 170 0 1 0 140 0a70 170 0 1 0-140 0Z" fill="none" stroke="#111" stroke-width="24"/></svg><div>Планер</div></div>
     <nav class="tabs" id="tabs" aria-label="Вид">
+      <button data-v="team" id="teamTab">Команда</button>
       <button data-v="board">Доска</button>
       <button data-v="list">Список</button>
       <button data-v="load">Загрузка</button>
@@ -684,7 +728,7 @@ class ServerStore{
     const st=await this.api('GET','/state');
     S.me=st.me.id; S.isOwner=st.admin!=null?!!st.admin:st.role==='designer'; S.role=st.admin?'admin':(st.role==='member'?'manager':st.role); S.myName=st.me.name;
     for(const u of st.users){ names[u.id]=u.name; S.urole[u.id]=u.role||'manager'; if(u.disabled) (S.disabledIds||(S.disabledIds=new Set())).add(u.id); }
-    if(!S._dsgInit){ S._dsgInit=true; if(S.role==='designer'&&!S.isOwner) S.dsg=S.me; }
+    if(!S._dsgInit){ S._dsgInit=true; if(S.role==='designer'&&!S.isOwner) S.dsg=S.me; if(!S._viewFromHash&&(S.role==='head'||S.role==='manager')){ S.view='team'; try{history.replaceState(null,'','#team');}catch(e){} } }
     this.tasks=new Map(st.tasks.map(t=>[t.id,t])); this.config=st.config;
     this.emit(); this.emitCfg();
   }
@@ -822,7 +866,7 @@ async function joinByInvite(key){
     const d=await r.json().catch(()=>({}));
     if(!r.ok){ try{ history.replaceState(null,'','#board'); }catch(_){} showLogin(d.error||'Ссылка недействительна'); return; }
     try{ localStorage.setItem('planer-token',d.token); }catch(_){ showLogin('Браузер не даёт сохранить вход — разрешите хранение данных для сайта'); return; }
-    try{ history.replaceState(null,'','#board'); }catch(_){}
+    try{ history.replaceState(null,'',location.pathname); }catch(_){}
     location.reload();
   }catch(_){ showLogin('Сервер не отвечает'); }
 }
@@ -876,7 +920,7 @@ function byDue(a,b){ const da=dueTs(a),db=dueTs(b); if(da!==db){ if(da==null) re
 
 /* ============ render ============ */
 function render(){ renderTabs(); renderSub(); renderNotes(); renderMain(); }
-function renderTabs(){ for(const b of $('#tabs').children) b.setAttribute('aria-pressed',String(b.dataset.v===S.view)); $('#newBtn').disabled=!S.canWrite; $('#newBtn').style.display='none'; }
+function renderTabs(){ if(S.view==='team'&&S.mode!=='server') S.view='board'; $('#teamTab').style.display=S.mode==='server'?'':'none'; for(const b of $('#tabs').children) b.setAttribute('aria-pressed',String(b.dataset.v===S.view)); $('#newBtn').disabled=!S.canWrite; $('#newBtn').style.display='none'; }
 function renderSub(){
   const sub=$('#sub'); sub.replaceChildren();
   const brands=allBrands();
@@ -888,7 +932,7 @@ function renderSub(){
       S.who?h('span',{class:'ava'},initials(nameOf(S.who))):null, S.who?nameOf(S.who):'Все постановщики', h('span',{class:'caret'},'▾'));
     sub.append(btn);
   }
-  if(S.mode==='server'){
+  if(S.mode==='server'&&S.view!=='team'){
     const dl=S.dsg==='__none'?'Без исполнителя':S.dsg?nameOf(S.dsg):'Все дизайнеры';
     const dbtn=h('button',{class:'chip who-chip','aria-pressed':String(!!S.dsg),onclick:e=>openPersonPicker(e.currentTarget,S.dsg,id=>{ S.dsg=id||null; render(); },{ids:[...designerIds(),'__none'],allLabel:'Все дизайнеры'})},
       S.dsg&&S.dsg!=='__none'?h('span',{class:'ava'},initials(nameOf(S.dsg))):null, h('span',{class:'chip-k'},'Дизайнер:'), dl, h('span',{class:'caret'},'▾'));
@@ -921,6 +965,8 @@ function renderMainInner(){
   m.append(h('div',{class:'board-top'},SEARCH,h('button',{class:'btn primary new-col',disabled:!S.canWrite,onclick:openNew},h('span',{class:'nl'},'+ Поставить задачу'),h('span',{class:'ns'},'+ Задача'))));
   if(S.view==='list') return renderList(m);
   if(S.view==='load') return renderLoad(m);
+  if(S.view==='team') return renderTeam(m);
+  if(S.fromTeam&&S.dsg) m.append(h('button',{class:'chip plain back-chip',onclick:()=>{ S.dsg=null; S.fromTeam=false; S.view='team'; setHash('team'); render(); }},'← Вся команда',h('span',{class:'ava'},S.dsg==='__none'?'?':initials(nameOf(S.dsg))),S.dsg==='__none'?'Без исполнителя':nameOf(S.dsg)));
   renderBoard(m);
 }
 
@@ -999,6 +1045,52 @@ function renderBoard(m){
   }
   m.append(grid);
   if(!S.tasks.length) m.append(h('p',{class:'ro',style:'text-align:center;margin-top:18px'},'Доска пустая. Нажмите «+ Поставить задачу», чтобы добавить первую.'));
+}
+
+function renderTeam(m){
+  const q=S.q.trim().toLowerCase();
+  const tasks=S.tasks.filter(t=>(!S.brand||t.brand===S.brand)&&(!S.who||t.createdBy===S.who)&&(!q||(t.title+' '+t.brand+' '+t.desc).toLowerCase().includes(q)));
+  const people=designerIds();
+  const cols=[{id:null,name:'Новые',sub:'без исполнителя'},...people.map(id=>({id,name:nameOf(id)}))];
+  const wrap=h('div',{class:'team',style:'--n:'+people.length});
+  const cut=Date.now()-7*DAY;
+  for(const c of cols){
+    const mine=tasks.filter(t=>c.id?t.assignee===c.id:!t.assignee);
+    const open=mine.filter(t=>t.status!=='done');
+    const over=open.filter(isOver).length;
+    const hrs=open.reduce((a,t)=>a+(SIZE_H[t.size]||0),0);
+    const meta=h('span',{class:'tcol-meta'},
+      h('span',{},open.length+' '+plural(open.length,'открытая','открытых','открытых')),
+      c.id&&hrs?h('span',{},'≈ '+hrs+' ч'):null,
+      over?h('span',{class:'bad'},over+' просроч.'):null);
+    const head=c.id
+      ? h('button',{class:'tcol-h',title:'Открыть доску '+c.name,onclick:()=>{ S.dsg=c.id; S.fromTeam=true; S.view='board'; setHash('board'); render(); window.scrollTo(0,0); }},
+          h('span',{class:'ava'+(c.id===S.me?' me':'')},initials(c.name)), h('span',{class:'tcol-t'},h('span',{class:'tcol-name'},c.name),meta), h('span',{class:'tcol-go'},'Открыть →'))
+      : h('div',{class:'tcol-h'},h('span',{class:'ava none'},'?'),h('span',{class:'tcol-t'},h('span',{class:'tcol-name'},'Новые'),h('span',{class:'tcol-meta'},h('span',{},'без исполнителя · '+open.length))));
+    const body=h('div',{class:'tcol-body'});
+    const sts=c.id?STATUSES:STATUSES.filter(st=>st.id!=='done');
+    for(const st of sts){
+      let list=mine.filter(t=>t.status===st.id);
+      if(st.id==='done'){ list.sort((a,b)=>(b.doneAt||b.statusAt)-(a.doneAt||a.statusAt)); list=list.filter(t=>(t.doneAt||t.statusAt)>=cut); }
+      else list.sort(byDue);
+      if(!list.length) continue;
+      const showAll=S.teamOpen&&S.teamOpen[c.id+st.id]; const lim=st.id==='done'&&!showAll?3:1e9;
+      const sec=h('div',{class:'tsec','data-st':st.id},h('div',{class:'tsec-h'},h('span',{class:'col-dot'}),st.id==='done'?'Готово за неделю':st.name,h('span',{class:'n mono'},list.length)),
+        list.slice(0,lim).map(t=>{ const el=card(t); el.draggable=canReassignT(t)&&t.status!=='done'; return el; }));
+      if(list.length>lim) sec.append(h('button',{class:'tsec-more',onclick:()=>{ (S.teamOpen||(S.teamOpen={}))[c.id+st.id]=true; render(); }},'ещё '+(list.length-lim)));
+      body.append(sec);
+    }
+    if(!body.children.length) body.append(h('div',{class:'empty'},c.id?'Задач нет — можно перетащить сюда':'Все задачи разобраны'));
+    const col=h('section',{class:'tcol','aria-label':c.name},head,body);
+    col.addEventListener('dragover',e=>{ e.preventDefault(); col.classList.add('over'); });
+    col.addEventListener('dragleave',e=>{ if(!col.contains(e.relatedTarget)) col.classList.remove('over'); });
+    col.addEventListener('drop',async e=>{ e.preventDefault(); col.classList.remove('over');
+      const t=S.tasks.find(x=>x.id===e.dataTransfer.getData('text/plain')); if(!t||(t.assignee||null)===c.id) return;
+      if(!canReassignT(t)){ toast('Переназначать может руководитель'); return; }
+      try{ await store.update(t.id,{assignee:c.id}); toast(c.id?'Исполнитель: '+nameOf(c.id):'Задача снята с исполнителя'); }catch(err){ toast(err.message||'Не получилось'); } });
+    wrap.append(col);
+  }
+  m.append(wrap);
 }
 function emptyText(id){ return {new:'Новых задач нет',work:'Ничего не в работе',review:'Нечего проверять',done:'Пока ничего не сдано'}[id]; }
 
@@ -1597,14 +1689,14 @@ function renderActions(t){
 }
 
 /* ============ wiring ============ */
-for(const b of $('#tabs').children) b.onclick=()=>{ S.view=b.dataset.v; try{history.replaceState(null,'','#'+S.view);}catch(e){location.hash=S.view;} render(); };
+for(const b of $('#tabs').children) b.onclick=()=>{ S.view=b.dataset.v; if(S.view==='team'&&S.fromTeam){ S.dsg=null; S.fromTeam=false; } try{history.replaceState(null,'','#'+S.view);}catch(e){location.hash=S.view;} render(); };
 function taskHashFull(id){ return 't-'+String(id).replace(/[^A-Za-z0-9-]/g,c=>'-'+c.charCodeAt(0).toString(36)+'-'); }
 function taskHash(id){ return S.mode==='server'?taskHashFull(id):taskHashFull(id).slice(0,8); }
 function findByHash(v){ return S.tasks.find(x=>taskHashFull(x.id)===v)||S.tasks.find(x=>taskHash(x.id)===v); }
 function setHash(v){ try{ history.replaceState(null,'','#'+v); }catch(e){ S._ignoreHash=true; location.hash=v; } }
 function fromHash(){ const v=location.hash.slice(1);
   if(v.startsWith('t-')){ const t=findByHash(v); if(t){ if(D.id!==t.id) openTask(t.id); } else S.pendingTask=v; return; }
-  if(['board','list','load'].includes(v)) S.view=v; }
+  if(['board','list','load','team'].includes(v)){ S.view=v; S._viewFromHash=true; } }
 window.addEventListener('hashchange',()=>{ if(S._ignoreHash){ S._ignoreHash=false; return; } fromHash(); render(); });
 async function copyTaskLink(t,btn){
   const url=APP_URL+'#'+taskHash(t.id); const label=btn.textContent;
