@@ -1381,7 +1381,7 @@ function renderLoad(m){
     br.length?h('table',{style:'box-shadow:none;margin-top:14px'},h('thead',{},h('tr',{},h('th',{},'Бренд'),h('th',{class:'num'},'Сдано'),h('th',{class:'num'},'Правок в ср.'),h('th',{class:'num'},'Переносов'))),
       h('tbody',{},br.map(r=>h('tr',{style:'cursor:default'},h('td',{},h('span',{style:'display:inline-flex;gap:6px;align-items:center;font-weight:700'},r.b?symEl(r.b):null,r.b||'Без бренда')),h('td',{class:'num'},r.n),h('td',{class:'num',style:r.r!=='—'&&parseFloat(r.r.replace(',','.'))>=2?'color:var(--warn);font-weight:700':''},r.r),h('td',{class:'num',style:r.rs?'color:var(--warn)':''},r.rs))))):h('div',{class:'empty',style:'margin-top:14px'},'За этот период ничего не принято'));
 
-  const parts=[b1,bp,b2,b3,b4];
+  const parts=[sigs.length?b1:null,b2,b3,b4].filter(Boolean);
   m.append(h('div',{class:'grid2'},...parts));
 }
 function renderLoadOld(m,only){
