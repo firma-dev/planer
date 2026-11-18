@@ -595,7 +595,23 @@ textarea.t-title:focus{background:var(--card);box-shadow:0 0 0 1.5px var(--ink)}
 .size-seg button:hover{background:#E0DCD3}
 .size-seg button[aria-pressed="true"]{background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .size-need{border:1.5px solid var(--warn);border-radius:12px;padding:12px;background:#FFF8EC}
+
+.size-row{display:block;margin-top:12px}
+.size-row .dp-k{margin-bottom:6px}
+.size-pick button{padding:12px 14px;gap:3px;min-height:76px}
+.size-pick b{font-size:20px}
+.sheet-wrap{position:fixed;inset:0;z-index:90;background:rgba(23,23,27,0);display:flex;align-items:flex-end;justify-content:center;transition:background .18s}
+.sheet-wrap.on{background:rgba(23,23,27,.25)}
+.sheet{width:min(720px,calc(100vw - 24px));background:var(--card);border-radius:18px 18px 0 0;padding:18px 20px 22px;box-shadow:0 -10px 40px -10px rgba(0,0,0,.25);transform:translateY(100%);transition:transform .18s ease-out}
+.sheet-wrap.on .sheet{transform:none}
+.sheet-h{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+.sheet-k{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--ink3)}
+.sheet-t{font-size:17px;font-weight:800;margin-top:2px}
+.sheet-q{font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:8px}
 /* ===== команда ===== */
+.sub-sep{width:1px;height:22px;align-self:center;background:var(--line2);margin:0 2px}
+.who-chip .ava.none{background:transparent;border:1.5px dashed var(--ink3);color:var(--ink3)}
+.who-chip[aria-pressed="true"] .ava.none{border-color:#fff;color:#fff}
 .board.team{grid-template-columns:repeat(var(--n),minmax(0,1fr))}
 .t-col{display:flex;flex-direction:column;max-height:calc(100vh - 200px)}
 .t-col>.col-h{padding-bottom:10px;border-radius:8px}
@@ -922,7 +938,7 @@ function byDue(a,b){ const da=dueTs(a),db=dueTs(b); if(da!==db){ if(da==null) re
 function render(){ renderTabs(); renderSub(); renderNotes(); renderMain(); }
 function renderTabs(){ if(S.view==='team'&&S.mode!=='server') S.view='board';
   const headOnly=S.mode==='server'&&S.role==='head'&&!S.isOwner;
-  if(headOnly&&(S.view==='list'||(S.view==='board'&&!S.fromTeam))){ S.view='team'; S.dsg=null; }
+  if(headOnly&&(S.view==='list'||(S.view==='board'&&!S.fromTeam))){ S.view='team'; S.dsg=null; if(!location.hash.startsWith('#t-')) setHash('team'); }
   const cur=(S.view==='board'&&S.fromTeam)?'team':S.view;
   for(const b of $('#tabs').children){ const v=b.dataset.v; b.style.display=(v==='team'&&S.mode!=='server')||(headOnly&&(v==='board'||v==='list'))?'none':''; b.setAttribute('aria-pressed',String(v===cur)); } $('#newBtn').disabled=!S.canWrite; $('#newBtn').style.display='none'; }
 function renderSub(){
@@ -936,11 +952,11 @@ function renderSub(){
       S.who?h('span',{class:'ava'},initials(nameOf(S.who))):null, S.who?nameOf(S.who):'Все постановщики', h('span',{class:'caret'},'▾'));
     sub.append(btn);
   }
-  if(S.mode==='server'&&S.view!=='team'){
-    const dl=S.dsg==='__none'?'Без исполнителя':S.dsg?nameOf(S.dsg):'Все дизайнеры';
-    const dbtn=h('button',{class:'chip who-chip','aria-pressed':String(!!S.dsg),onclick:e=>openPersonPicker(e.currentTarget,S.dsg,id=>{ S.dsg=id||null; render(); },{ids:[...designerIds(),'__none'],allLabel:'Все дизайнеры'})},
-      S.dsg&&S.dsg!=='__none'?h('span',{class:'ava'},initials(nameOf(S.dsg))):null, h('span',{class:'chip-k'},'Дизайнер:'), dl, h('span',{class:'caret'},'▾'));
-    sub.insertBefore(dbtn, sub.firstChild);
+  if(S.mode==='server'){
+    const ppl=[h('button',{class:'chip plain','aria-pressed':String(!S.dsg),onclick:()=>{ if(S.fromTeam){ S.view='team'; setHash('team'); } S.dsg=null; S.fromTeam=false; render(); }},'Все люди')];
+    for(const id of designerIds()) ppl.push(h('button',{class:'chip who-chip','aria-pressed':String(S.dsg===id),onclick:()=>{ S.dsg=S.dsg===id?null:id; if(!S.dsg) S.fromTeam=false; else if(S.view==='team'){ S.fromTeam=true; S.view='board'; setHash('board'); } render(); }},h('span',{class:'ava'},initials(nameOf(id))),nameOf(id)));
+    ppl.push(h('span',{class:'sub-sep'}));
+    sub.prepend(...ppl);
   }
   const open=S.tasks.filter(t=>t.status!=='done');
   const over=open.filter(isOver).length;
@@ -970,7 +986,6 @@ function renderMainInner(){
   if(S.view==='list') return renderList(m);
   if(S.view==='load') return renderLoad(m);
   if(S.view==='team') return renderTeam(m);
-  if(S.fromTeam&&S.dsg) m.append(h('button',{class:'chip plain back-chip',onclick:()=>{ S.dsg=null; S.fromTeam=false; S.view='team'; setHash('team'); render(); }},'← Вся команда',h('span',{class:'ava'},S.dsg==='__none'?'?':initials(nameOf(S.dsg))),S.dsg==='__none'?'Без исполнителя':nameOf(S.dsg)));
   renderBoard(m);
 }
 
@@ -1055,7 +1070,8 @@ function renderTeam(m){
   const q=S.q.trim().toLowerCase();
   const tasks=S.tasks.filter(t=>(!S.brand||t.brand===S.brand)&&(!S.who||t.createdBy===S.who)&&(!q||(t.title+' '+t.brand+' '+t.desc).toLowerCase().includes(q)));
   const people=designerIds();
-  const cols=[{id:null,name:'Новые'},...people.map(id=>({id,name:nameOf(id)}))];
+  let cols=[{id:null,name:'Новые'},...people.map(id=>({id,name:nameOf(id)}))];
+  if(S.dsg) cols=cols.filter(c=>S.dsg==='__none'?!c.id:c.id===S.dsg);
   const wrap=h('div',{class:'board team',style:'--n:'+cols.length});
   const cut=Date.now()-7*DAY;
   const mk=t=>{ const el=card(t); el.draggable=canReassignT(t)&&t.status!=='done'; return el; };
@@ -1211,13 +1227,13 @@ function renderLoad(m){
 /* ============ actions ============ */
 async function moveTask(t,to,comment,kind){
   if(!S.canWrite) return;
+  if(to==='work'&&t.status==='new'&&!t.size&&S.mode==='server'&&canExecT(t)){ return sizeSheet(t,async k=>{ await store.update(t.id,{size:k}); await store.log(t.id,{kind:'event',text:'Размер: '+sizeLabel(k),by:S.me,at:Date.now()}); await moveTask({...t,size:k},'work'); }); }
   const now=Date.now(); const patch={status:to,statusAt:now,updatedAt:now};
   if(to==='done') patch.doneAt=now;
   try{
     await store.update(t.id,patch);
     await store.log(t.id,{kind:'event',text:`${ST_NAME[t.status]} → ${ST_NAME[to]}`,by:S.me,at:now});
     if(comment) await store.log(t.id,{kind:kind==='return'?'return':'comment',text:comment,by:S.me,at:now+1});
-    if(to==='work'&&!t.size&&S.mode==='server'&&canExecT(t)&&D.id!==t.id) openTask(t.id);
   }catch(e){ toast(errText(e)); }
 }
 
@@ -1539,8 +1555,8 @@ function renderHead(t){
   } else byEl=h('span',{},'Поставил(а): ',h('b',{},nameOf(t.createdBy)));
   const canSize=S.canWrite&&canExecT(t)&&t.status!=='done';
   const sizePill=(t.size&&!canSize)?h('span',{class:'pill',style:'cursor:default'},h('span',{class:'pill-k'},'Размер'),h('span',{class:'mono'},sizeLabel(t.size))):null;
-  const sizeRow=(canSize&&t.status!=='new'&&t.size)?h('div',{class:'size-row'},h('span',{class:'pill-k'},'Размер'),
-    h('div',{class:'size-seg',role:'group','aria-label':'Размер задачи'},SIZES.map(([k,hh])=>h('button',{type:'button','aria-pressed':String(t.size===k),title:sizeLabel(k),onclick:()=>{ if(k!==t.size) patchTask(t,{size:k},`Размер: ${t.size?sizeLabel(t.size):'—'} → ${sizeLabel(k)}`); }},h('b',{},k),' ',hh+' ч')))):null;
+  const sizeRow=(canSize&&t.status!=='new'&&t.size)?h('div',{class:'size-row'},h('div',{class:'dp-k'},'Объём работы'),
+    sizePicker(t.size,k=>{ if(k!==t.size) patchTask(t,{size:k},`Размер: ${t.size?sizeLabel(t.size):'—'} → ${sizeLabel(k)}`); })):null;
   const parts=[title,h('div',{class:'t-by'},byEl,asgEl),h('div',{class:'pills'},brandPill,duePill,prioPill,sizePill),sizeRow].filter(Boolean);
   if(isHeadUser()&&S.mode==='server'){
     const x=tStats(t);
@@ -1635,6 +1651,17 @@ function renderLog(){
   if(D.histOpen) parts.push(h('div',{class:'hist'},events.map(l=>h('div',{class:'hist-i'},h('span',{class:'when'},fmtWhen(+l.at)),h('span',{class:'hist-t'},l.text.replace(/\n/g,' · ')),h('span',{class:'hist-w'},nameOf(l.by))))));
   D.histEl.replaceChildren(...parts);
 }
+function sizeSheet(t,onPick){
+  document.querySelector('.sheet-wrap')?.remove();
+  const close=()=>{ wrap.classList.remove('on'); setTimeout(()=>wrap.remove(),180); document.removeEventListener('keydown',esc); };
+  const esc=e=>{ if(e.key==='Escape') close(); };
+  const wrap=h('div',{class:'sheet-wrap',onclick:e=>{ if(e.target===wrap) close(); }},
+    h('div',{class:'sheet',role:'dialog','aria-label':'Объём работы'},
+      h('div',{class:'sheet-h'},h('div',{},h('div',{class:'sheet-k'},'Берёшь в работу'),h('div',{class:'sheet-t'},t.title)),h('button',{class:'btn ghost',onclick:close},'Отмена')),
+      h('div',{class:'sheet-q'},'Сколько займёт задача?'),
+      sizePicker('',async k=>{ close(); try{ await onPick(k); }catch(e){ toast(errText(e)); } })));
+  document.body.append(wrap); requestAnimationFrame(()=>wrap.classList.add('on')); document.addEventListener('keydown',esc);
+}
 function sizePicker(cur,onPick){
   return h('div',{class:'size-pick',role:'group','aria-label':'Размер задачи'},SIZES.map(([k,hh,txt])=>h('button',{type:'button','aria-pressed':String(cur===k),onclick:()=>onPick(k)},h('b',{},k),h('span',{class:'sz-h'},hh+' ч'),h('span',{class:'sz-t'},txt))));
 }
@@ -1675,8 +1702,8 @@ function renderActions(t){
       h('div',{style:'display:flex;gap:8px'},h('button',{class:'btn ghost',onclick:()=>{D.askOpen=false;renderActions(t);}},'Отмена'))));
   };
   const btns=[];
-  if(canTake) btns.push(h('button',{class:'btn primary',onclick:()=>askSize(async k=>{ await store.update(t.id,{assignee:S.me,size:k}); await store.log(t.id,{kind:'event',text:'Взял(а) задачу себе · размер '+sizeLabel(k),by:S.me,at:Date.now()}); if(t.status==='new') await moveTask({...t,assignee:S.me},'work'); })},t.status==='new'?'Взять себе в работу':'Взять себе'));
-  else if(t.status==='new'&&exec&&(t.assignee||S.mode!=='server')) btns.push(h('button',{class:'btn primary',onclick:()=>askSize(async k=>{ await store.update(t.id,{size:k}); await store.log(t.id,{kind:'event',text:'Размер: '+sizeLabel(k),by:S.me,at:Date.now()}); await moveTask({...t},'work'); })},'Взять в работу'));
+  if(canTake) btns.push(h('button',{class:'btn primary',onclick:()=>askSize(async k=>{ await store.update(t.id,{assignee:S.me,size:k}); await store.log(t.id,{kind:'event',text:'Взял(а) задачу себе · размер '+sizeLabel(k),by:S.me,at:Date.now()}); if(t.status==='new') await moveTask({...t,assignee:S.me,size:k},'work'); })},t.status==='new'?'Взять себе в работу':'Взять себе'));
+  else if(t.status==='new'&&exec&&(t.assignee||S.mode!=='server')) btns.push(h('button',{class:'btn primary',onclick:()=>askSize(async k=>{ await store.update(t.id,{size:k}); await store.log(t.id,{kind:'event',text:'Размер: '+sizeLabel(k),by:S.me,at:Date.now()}); await moveTask({...t,size:k},'work'); })},'Взять в работу'));
   if(t.status==='work'&&exec&&(t.assignee||S.mode!=='server')&&!t.size&&S.mode==='server'){
     A.replaceChildren(h('div',{class:'ask on size-need'},h('label',{class:'res-k'},'Оцени размер работы — без этого задачу не сдать'),
       sizePicker('',async k=>{ try{ await store.update(t.id,{size:k}); await store.log(t.id,{kind:'event',text:'Размер: '+sizeLabel(k),by:S.me,at:Date.now()}); }catch(e){ toast(errText(e)); } refreshDrawer(); })));
