@@ -78,6 +78,20 @@ const publicUser = u => ({ id: u.id, name: u.name });
 const isDesigner = a => a.role === 'designer';
 const canEdit = (a, t) => isDesigner(a) || t.createdBy === a.user.id;
 
+const publicConfig = () => ({ brands: db.config.brands, brandColors: db.config.brandColors });
+
+// ---------- admin code ----------
+// Если код сменили через интерфейс, он хранится в базе как хэш и важнее DESIGNER_CODE из .env
+function hashCode(code, salt) { return crypto.scryptSync(String(code), salt, 32).toString('hex'); }
+function checkAdminCode(code) {
+  const c = db.config.adminCode;
+  if (c && c.salt && c.hash) return safeEq(hashCode(code, c.salt), c.hash);
+  return safeEq(code, DESIGNER_CODE);
+}
+const loginFails = new Map();
+function tooManyFails(ip) { const f = loginFails.get(ip); return f && f.n >= 10 && Date.now() - f.t < 10 * 60 * 1000; }
+function noteFail(ip) { const f = loginFails.get(ip) || { n: 0, t: Date.now() }; if (Date.now() - f.t > 10 * 60 * 1000) { f.n = 0; f.t = Date.now(); } f.n++; loginFails.set(ip, f); }
+
 // ---------- realtime (SSE) ----------
 const clients = new Set();
 function broadcast(ev) { const line = `data: ${JSON.stringify(ev)}\n\n`; for (const c of clients) c.write(line); }
@@ -123,13 +137,15 @@ async function api(req, res, url) {
   }
 
   if (p === '/api/session' && m === 'POST') {
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
+    if (tooManyFails(ip)) return send(res, 429, { error: 'Слишком много попыток — подождите 10 минут' });
     const b = await readBody(req);
     const name = str(b.name, 80).replace(/\s+/g, ' ');
     const code = str(b.code, 100);
     if (name.split(' ').filter(Boolean).length < 2) return send(res, 400, { error: 'Введите имя и фамилию' });
     let role = 'member';
-    if (code && safeEq(code, DESIGNER_CODE)) role = 'designer';
-    else if (!OPEN_LOGIN) return send(res, 403, { error: code ? 'Неверный код' : 'Вход только по личной ссылке — попросите её у администратора' });
+    if (code && checkAdminCode(code)) role = 'designer';
+    else if (!OPEN_LOGIN) { if (code) noteFail(ip); return send(res, 403, { error: code ? 'Неверный код' : 'Вход только по личной ссылке — попросите её у администратора' }); }
     else if (TEAM_CODE && !safeEq(code, TEAM_CODE)) return send(res, 403, { error: 'Неверный код команды' });
     let u = Object.values(db.users).find(x => normName(x.name) === normName(name));
     if (!u) { u = { id: 'u' + id(9), name, createdAt: Date.now() }; db.users[u.id] = u; broadcast({ type: 'user', user: publicUser(u) }); }
@@ -158,8 +174,22 @@ async function api(req, res, url) {
       me: publicUser(a.user), role: a.role,
       tasks: Object.values(db.tasks),
       users: Object.values(db.users).map(publicUser),
-      config: Object.assign({}, db.config, { ownerId: designer ? designer.userId : null }),
+      config: Object.assign(publicConfig(), { ownerId: designer ? designer.userId : null }),
     });
+  }
+
+  if (p === '/api/admin/code' && m === 'POST') {
+    if (!isDesigner(a)) return send(res, 403, { error: 'Только администратор' });
+    const b = await readBody(req);
+    const cur = typeof b.current === 'string' ? b.current : '';
+    const next = typeof b.next === 'string' ? b.next : '';
+    if (!checkAdminCode(cur)) return send(res, 403, { error: 'Текущий код неверный' });
+    if (next.length < 8 || next.length > 100) return send(res, 400, { error: 'Новый код — от 8 до 100 символов' });
+    const salt = crypto.randomBytes(16).toString('hex');
+    db.config.adminCode = { salt, hash: hashCode(next, salt), changedAt: Date.now() };
+    for (const [t, s] of Object.entries(db.sessions)) if (s.role === 'designer' && t !== a.token) delete db.sessions[t];
+    save();
+    return send(res, 200, { ok: true });
   }
 
   if (p === '/api/people' && m === 'GET') {
@@ -194,8 +224,8 @@ async function api(req, res, url) {
     const b = await readBody(req);
     if (Array.isArray(b.brands)) db.config.brands = b.brands.map(x => str(x, 60)).filter(Boolean).slice(0, 40);
     if (b.brandColors && typeof b.brandColors === 'object') { const c = {}; for (const [k, v] of Object.entries(b.brandColors)) if (/^#[0-9a-f]{6}$/i.test(v)) c[str(k, 60)] = v; db.config.brandColors = c; }
-    save(); broadcast({ type: 'config', config: db.config });
-    return send(res, 200, db.config);
+    save(); broadcast({ type: 'config', config: publicConfig() });
+    return send(res, 200, publicConfig());
   }
 
   if (p === '/api/tasks' && m === 'POST') {

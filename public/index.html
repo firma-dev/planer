@@ -528,6 +528,13 @@ textarea.t-title:focus{background:var(--card);box-shadow:0 0 0 1.5px var(--ink)}
 .rc-t{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rc-x{border:0;background:transparent;color:var(--ink3);font-size:13px;padding:2px 6px}
 .rc-x:hover{color:var(--ink)}
+
+.people-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.code-box[hidden]{display:none}
+.code-form{display:flex;flex-direction:column;gap:8px;max-width:360px}
+.code-form input{border:1px solid var(--line2);border-radius:10px;padding:9px 12px;outline:none;background:#fff}
+.code-form input:focus{border-color:var(--ink)}
+.code-form .btn{align-self:flex-start}
 </style>
 </head>
 <body>
@@ -1183,7 +1190,26 @@ async function openPeople(){
   if(D.unsubLog){D.unsubLog();D.unsubLog=null;}
   D.mode='people'; D.id=null;
   $('#dTitle').textContent='Люди';
-  const A=$('#dActions'); A.classList.remove('stack'); A.replaceChildren(h('span',{class:'ro'},'Вход — только по личным ссылкам. Ссылку отправьте человеку в мессенджер.'));
+  const A=$('#dActions'); A.classList.remove('stack');
+  const codeBox=h('div',{class:'code-box',hidden:true});
+  const codeBtn=h('button',{class:'linkbtn',onclick:()=>{ codeBox.hidden=!codeBox.hidden; if(!codeBox.hidden) codeBox.querySelector('input').focus(); }},'Сменить код администратора');
+  (()=>{
+    const cur=h('input',{type:'password',placeholder:'Текущий код',autocomplete:'current-password'});
+    const nx=h('input',{type:'password',placeholder:'Новый код (от 8 символов)',autocomplete:'new-password'});
+    const nx2=h('input',{type:'password',placeholder:'Новый код ещё раз',autocomplete:'new-password'});
+    const err=h('div',{class:'login-err'});
+    const go=h('button',{class:'btn primary small',type:'submit'},'Сохранить код');
+    codeBox.append(h('form',{class:'code-form',onsubmit:async e=>{ e.preventDefault(); err.textContent='';
+      if(nx.value.length<8){ err.textContent='Новый код — от 8 символов'; nx.focus(); return; }
+      if(nx.value!==nx2.value){ err.textContent='Коды не совпадают'; nx2.focus(); return; }
+      go.disabled=true;
+      try{ await store.api('POST','/admin/code',{current:cur.value,next:nx.value}); cur.value=nx.value=nx2.value=''; codeBox.hidden=true; toast('Код администратора изменён. На других устройствах войдите заново.'); }
+      catch(ex){ err.textContent=errText(ex); }
+      go.disabled=false; }},
+      h('p',{class:'ro',style:'margin:0'},'Код нужен, чтобы войти как администратор на другом устройстве. Сохраните его в надёжном месте.'),cur,nx,nx2,err,go));
+  })();
+  A.replaceChildren(h('div',{class:'people-foot'},h('span',{class:'ro'},'Вход — только по личным ссылкам. Ссылку отправьте человеку в мессенджер.'),codeBtn),codeBox);
+  A.classList.add('stack');
   const list=h('div',{class:'people'});
   const nameIn=h('input',{type:'text',placeholder:'Имя Фамилия',maxlength:'80'});
   const add=h('button',{class:'btn primary',type:'submit'},'Добавить');
