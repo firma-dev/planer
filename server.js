@@ -72,11 +72,26 @@ function auth(req, url) {
   const u = db.users[s.userId]; if (!u) return null;
   if (u.disabled) return null;
   if (s.role !== 'designer' && !s.viaInvite && TEAM_CODE && s.teamCode !== TEAM_CODE) return null; // код команды сменили — перелогин
-  return { token, user: u, role: s.role };
+  const admin = s.role === 'designer';
+  return { token, user: u, admin, role: u.role || (admin ? 'designer' : 'manager') };
 }
-const publicUser = u => ({ id: u.id, name: u.name });
-const isDesigner = a => a.role === 'designer';
-const canEdit = (a, t) => isDesigner(a) || t.createdBy === a.user.id;
+const publicUser = u => ({ id: u.id, name: u.name, role: u.role || 'manager', disabled: !!u.disabled });
+const ROLES = ['designer', 'manager', 'head'];
+const isDesigner = a => a.admin;                 // администратор (вход по коду дизайнера)
+const isHead = a => a.admin || a.role === 'head';
+const canExec = (a, t) => isHead(a) || t.assignee === a.user.id;
+const canManage = (a, t) => isHead(a) || t.createdBy === a.user.id;
+const canEdit = (a, t) => canManage(a, t) || canExec(a, t);
+const assignable = id => { const u = db.users[id]; return !!u && !u.disabled && u.role === 'designer'; };
+function migrate() {
+  const adminSess = Object.values(db.sessions).find(x => x.role === 'designer');
+  let changed = false;
+  if (adminSess && db.users[adminSess.userId] && !db.users[adminSess.userId].role) { db.users[adminSess.userId].role = 'designer'; changed = true; }
+  for (const u of Object.values(db.users)) if (!u.role) { u.role = 'manager'; changed = true; }
+  const fallback = adminSess ? adminSess.userId : (Object.values(db.users).find(u => u.role === 'designer') || {}).id;
+  if (fallback) for (const t of Object.values(db.tasks)) if (t.assignee === undefined) { t.assignee = fallback; changed = true; }
+  if (changed) save();
+}
 
 const publicConfig = () => ({ brands: db.config.brands, brandColors: db.config.brandColors });
 
@@ -133,7 +148,7 @@ async function api(req, res, url) {
     db.sessions[token] = { userId: u.id, role: 'member', teamCode: TEAM_CODE, viaInvite: true, createdAt: Date.now() };
     u.lastSeen = Date.now();
     save();
-    return send(res, 200, { token, me: publicUser(u), role: 'member' });
+    return send(res, 200, { token, me: publicUser(u), role: u.role || 'manager', admin: false });
   }
 
   if (p === '/api/session' && m === 'POST') {
@@ -148,11 +163,15 @@ async function api(req, res, url) {
     else if (!OPEN_LOGIN) { if (code) noteFail(ip); return send(res, 403, { error: code ? 'Неверный код' : 'Вход только по личной ссылке — попросите её у администратора' }); }
     else if (TEAM_CODE && !safeEq(code, TEAM_CODE)) return send(res, 403, { error: 'Неверный код команды' });
     let u = Object.values(db.users).find(x => normName(x.name) === normName(name));
-    if (!u) { u = { id: 'u' + id(9), name, createdAt: Date.now() }; db.users[u.id] = u; broadcast({ type: 'user', user: publicUser(u) }); }
+    if (!u) { u = { id: 'u' + id(9), name, createdAt: Date.now() }; db.users[u.id] = u; }
+    if (role === 'designer' && !u.role) u.role = 'designer';
+    if (!u.role) u.role = 'manager';
+    broadcast({ type: 'user', user: publicUser(u) });
     const token = id(32);
     db.sessions[token] = { userId: u.id, role, teamCode: TEAM_CODE, createdAt: Date.now() };
     save();
-    return send(res, 200, { token, me: publicUser(u), role });
+    migrate();
+    return send(res, 200, { token, me: publicUser(u), role: u.role, admin: role === 'designer' });
   }
 
   const a = auth(req, url);
@@ -165,13 +184,14 @@ async function api(req, res, url) {
     req.on('close', () => clients.delete(res));
     return;
   }
-  if (p === '/api/me' && m === 'GET') return send(res, 200, { me: publicUser(a.user), role: a.role });
+  if (p === '/api/me' && m === 'GET') return send(res, 200, { me: publicUser(a.user), role: a.role, admin: a.admin });
   if (p === '/api/logout' && m === 'POST') { delete db.sessions[a.token]; save(); return send(res, 200, {}); }
 
   if (p === '/api/state' && m === 'GET') {
+    migrate();
     const designer = Object.values(db.sessions).find(s => s.role === 'designer');
     return send(res, 200, {
-      me: publicUser(a.user), role: a.role,
+      me: publicUser(a.user), role: a.role, admin: a.admin,
       tasks: Object.values(db.tasks),
       users: Object.values(db.users).map(publicUser),
       config: Object.assign(publicConfig(), { ownerId: designer ? designer.userId : null }),
@@ -193,34 +213,43 @@ async function api(req, res, url) {
   }
 
   if (p === '/api/people' && m === 'GET') {
-    if (!isDesigner(a)) return send(res, 403, { error: 'Только дизайнер' });
-    return send(res, 200, Object.values(db.users).map(u => ({ id: u.id, name: u.name, inviteKey: u.inviteKey || null, disabled: !!u.disabled, lastSeen: u.lastSeen || null, createdAt: u.createdAt })));
+    if (!isDesigner(a)) return send(res, 403, { error: 'Только администратор' });
+    return send(res, 200, Object.values(db.users).map(u => ({ id: u.id, name: u.name, role: u.role || 'manager', inviteKey: u.inviteKey || null, disabled: !!u.disabled, lastSeen: u.lastSeen || null, createdAt: u.createdAt })));
   }
   if (p === '/api/people' && m === 'POST') {
-    if (!isDesigner(a)) return send(res, 403, { error: 'Только дизайнер' });
+    if (!isDesigner(a)) return send(res, 403, { error: 'Только администратор' });
     const b = await readBody(req);
     const name = str(b.name, 80).replace(/\s+/g, ' ');
     if (name.split(' ').filter(Boolean).length < 2) return send(res, 400, { error: 'Введите имя и фамилию' });
     let u = Object.values(db.users).find(x => normName(x.name) === normName(name));
     if (u && !u.disabled) return send(res, 409, { error: 'Такой человек уже есть' });
     if (!u) { u = { id: 'u' + id(9), name, createdAt: Date.now() }; db.users[u.id] = u; }
-    u.disabled = false; u.inviteKey = id(24);
+    u.disabled = false; u.inviteKey = id(24); u.role = ROLES.includes(b.role) ? b.role : (u.role || 'manager');
     save(); broadcast({ type: 'user', user: publicUser(u) });
-    return send(res, 201, { id: u.id, name: u.name, inviteKey: u.inviteKey, disabled: false });
+    return send(res, 201, { id: u.id, name: u.name, role: u.role, inviteKey: u.inviteKey, disabled: false });
+  }
+  let rm = p.match(/^\/api\/people\/([A-Za-z0-9]+)$/);
+  if (rm && m === 'PATCH') {
+    if (!isDesigner(a)) return send(res, 403, { error: 'Только администратор' });
+    const u = db.users[rm[1]]; if (!u) return send(res, 404, { error: 'Нет такого человека' });
+    const b = await readBody(req);
+    if (ROLES.includes(b.role)) u.role = b.role;
+    save(); broadcast({ type: 'user', user: publicUser(u) });
+    return send(res, 200, publicUser(u));
   }
   let pm = p.match(/^\/api\/people\/([A-Za-z0-9]+)\/(reset|disable)$/);
   if (pm && m === 'POST') {
-    if (!isDesigner(a)) return send(res, 403, { error: 'Только дизайнер' });
+    if (!isDesigner(a)) return send(res, 403, { error: 'Только администратор' });
     const u = db.users[pm[1]]; if (!u) return send(res, 404, { error: 'Нет такого человека' });
     if (u.id === a.user.id) return send(res, 400, { error: 'Себя менять нельзя' });
     for (const [t, s] of Object.entries(db.sessions)) if (s.userId === u.id) delete db.sessions[t];
     if (pm[2] === 'reset') { u.inviteKey = id(24); u.disabled = false; } else { u.inviteKey = null; u.disabled = true; }
-    save();
+    save(); broadcast({ type: 'user', user: publicUser(u) });
     return send(res, 200, { id: u.id, name: u.name, inviteKey: u.inviteKey, disabled: !!u.disabled });
   }
 
   if (p === '/api/config' && m === 'PATCH') {
-    if (!isDesigner(a)) return send(res, 403, { error: 'Только дизайнер' });
+    if (!isDesigner(a)) return send(res, 403, { error: 'Только администратор' });
     const b = await readBody(req);
     if (Array.isArray(b.brands)) db.config.brands = b.brands.map(x => str(x, 60)).filter(Boolean).slice(0, 40);
     if (b.brandColors && typeof b.brandColors === 'object') { const c = {}; for (const [k, v] of Object.entries(b.brandColors)) if (/^#[0-9a-f]{6}$/i.test(v)) c[str(k, 60)] = v; db.config.brandColors = c; }
@@ -234,7 +263,8 @@ async function api(req, res, url) {
     const t = cleanTask(b, { id: 't' + id(9), title: '', brand: '', desc: '', link: '', resultLink: '', due: '', dueTime: '', priority: 'normal', status: 'new', createdBy: a.user.id, createdAt: now, updatedAt: now, statusAt: now });
     if (!t.title) return send(res, 400, { error: 'Пустое название' });
     t.status = 'new';
-    if (isDesigner(a) && typeof b.createdBy === 'string' && db.users[b.createdBy]) t.createdBy = b.createdBy;
+    if (isHead(a) && typeof b.createdBy === 'string' && db.users[b.createdBy]) t.createdBy = b.createdBy;
+    t.assignee = (typeof b.assignee === 'string' && assignable(b.assignee)) ? b.assignee : null;
     db.tasks[t.id] = t;
     addLog(t.id, { kind: 'event', text: 'Поставил(а) задачу', by: a.user.id, at: now });
     save(); broadcast({ type: 'task', task: t });
@@ -250,19 +280,29 @@ async function api(req, res, url) {
       const contentKeys = ['title', 'brand', 'desc', 'link'];
       const touchesContent = contentKeys.some(k => k in b);
       const touchesPlan = ['due', 'dueTime', 'priority'].some(k => k in b);
-      if ((touchesContent || touchesPlan) && !canEdit(a, t)) return send(res, 403, { error: 'Это не ваша задача' });
+      if (touchesContent && !canManage(a, t)) return send(res, 403, { error: 'Это не ваша задача' });
+      if (touchesPlan && !canEdit(a, t)) return send(res, 403, { error: 'Это не ваша задача' });
+      if ('assignee' in b) {
+        const to = b.assignee === null ? null : b.assignee;
+        if (to !== null && !assignable(to)) return send(res, 400, { error: 'Это не дизайнер' });
+        const selfTake = !t.assignee && to === a.user.id && a.user.role === 'designer';
+        const requesterOk = t.createdBy === a.user.id && t.status === 'new';
+        if (!isHead(a) && !selfTake && !requesterOk) return send(res, 403, { error: 'Переназначать может руководитель' });
+      }
       if (touchesContent && (t.status === 'review' || t.status === 'done')) return send(res, 403, { error: 'На проверке задачу менять нельзя' });
       if ('status' in b) {
         const to = b.status;
-        const okDesigner = isDesigner(a);
+        const okHead = isHead(a);
+        const okExec = t.assignee === a.user.id && to !== 'done' && t.status !== 'done';
         const okRequester = t.createdBy === a.user.id && ((t.status === 'review' && to === 'done') || (t.status === 'done' && to === 'work'));
-        if (!okDesigner && !okRequester) return send(res, 403, { error: 'Нельзя сменить статус' });
+        if (!okHead && !okExec && !okRequester) return send(res, 403, { error: 'Нельзя сменить статус' });
       }
-      if ('resultLink' in b && !isDesigner(a)) return send(res, 403, { error: 'Только дизайнер' });
-      if ('createdBy' in b && !isDesigner(a)) return send(res, 403, { error: 'Только дизайнер' });
+      if ('resultLink' in b && !canExec(a, t)) return send(res, 403, { error: 'Только исполнитель' });
+      if ('createdBy' in b && !isHead(a)) return send(res, 403, { error: 'Только руководитель' });
       const before = t.status;
       const next = cleanTask(b, t);
-      if (isDesigner(a) && typeof b.createdBy === 'string' && db.users[b.createdBy]) next.createdBy = b.createdBy;
+      if (isHead(a) && typeof b.createdBy === 'string' && db.users[b.createdBy]) next.createdBy = b.createdBy;
+      if ('assignee' in b) next.assignee = b.assignee === null ? null : b.assignee;
       const now = Date.now();
       next.updatedAt = now;
       if (next.status !== before) { next.statusAt = now; if (next.status === 'done') next.doneAt = now; }
@@ -271,7 +311,7 @@ async function api(req, res, url) {
       return send(res, 200, next);
     }
     if (m === 'DELETE') {
-      if (!canEdit(a, t)) return send(res, 403, { error: 'Это не ваша задача' });
+      if (!canManage(a, t)) return send(res, 403, { error: 'Это не ваша задача' });
       if (t.status === 'review' || t.status === 'done') return send(res, 403, { error: 'Задачу на проверке удалить нельзя' });
       delete db.tasks[t.id]; delete db.logs[t.id];
       save(); broadcast({ type: 'task-del', id: t.id });
@@ -313,6 +353,7 @@ function serveStatic(req, res, url) {
   });
 }
 
+migrate();
 http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
   try {

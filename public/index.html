@@ -542,6 +542,16 @@ textarea.t-title:focus{background:var(--card);box-shadow:0 0 0 1.5px var(--ink)}
 .acc-card{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
 .acc-card .ava{margin:0;width:40px;height:40px;font-size:14px}
 .acc-card .me-role{display:inline-block;margin-top:4px}
+
+.ava.none{background:transparent;border:1.5px dashed var(--ink3);color:var(--ink3)}
+.chip-k{color:var(--ink3);font-weight:600}
+.who-chip[aria-pressed="true"] .chip-k{color:#C9C7CE}
+.role-seg{display:flex;gap:2px;background:#E8E5DE;padding:3px;border-radius:10px;width:max-content;margin:-6px 0 14px}
+.role-seg button{border:0;background:transparent;padding:5px 12px;border-radius:8px;font-weight:600;font-size:12.5px;color:var(--ink2)}
+.role-seg button[aria-pressed="true"]{background:var(--card);color:var(--ink);box-shadow:var(--shadow)}
+.role-seg.small{margin:0}
+.role-seg.small button{padding:3px 9px;font-size:11.5px}
+.t-by{flex-wrap:wrap;justify-content:flex-start;gap:6px 18px}
 </style>
 </head>
 <body>
@@ -648,7 +658,8 @@ class ServerStore{
   async load(){
     const st=await this.api('GET','/state');
     S.me=st.me.id; S.isOwner=st.admin!=null?!!st.admin:st.role==='designer'; S.role=st.admin?'admin':(st.role==='member'?'manager':st.role); S.myName=st.me.name;
-    for(const u of st.users) names[u.id]=u.name;
+    for(const u of st.users){ names[u.id]=u.name; S.urole[u.id]=u.role||'manager'; if(u.disabled) (S.disabledIds||(S.disabledIds=new Set())).add(u.id); }
+    if(!S._dsgInit){ S._dsgInit=true; if(S.role==='designer'&&!S.isOwner) S.dsg=S.me; }
     this.tasks=new Map(st.tasks.map(t=>[t.id,t])); this.config=st.config;
     this.emit(); this.emitCfg();
   }
@@ -666,7 +677,7 @@ class ServerStore{
       if(ev.type==='task'){ this.tasks.set(ev.task.id,ev.task); this.emit(); }
       else if(ev.type==='task-del'){ this.tasks.delete(ev.id); this.logs.delete(ev.id); this.emit(); }
       else if(ev.type==='config'){ this.config=Object.assign({},this.config,ev.config); this.emitCfg(); }
-      else if(ev.type==='user'){ names[ev.user.id]=ev.user.name; render(); }
+      else if(ev.type==='user'){ names[ev.user.id]=ev.user.name; S.urole[ev.user.id]=ev.user.role||'manager'; if(ev.user.disabled) (S.disabledIds||(S.disabledIds=new Set())).add(ev.user.id); else if(S.disabledIds) S.disabledIds.delete(ev.user.id); render(); }
       else if(ev.type==='log'){ const arr=this.logs.get(ev.taskId); if(arr&&!arr.some(x=>x.id===ev.entry.id)){ arr.push(ev.entry); this.emitLog(ev.taskId); } }
     };
   }
@@ -718,9 +729,10 @@ const S={ mode:'loading', loaded:false, slow:false, err:null, tasks:[], me:null,
   view:'board', lanes:true, brand:null, who:null, mine:false, q:'', allDone:false, norm:6 };
 try{ const n=Number(localStorage.getItem('elementar-planer-norm')); if(n>0) S.norm=n; }catch(e){}
 const names={};
+S.urole={}; S.dsg=null;
 let store=null;
 
-function nameOf(id){ if(!id) return 'Кто-то'; if(S.mode==='local') return id==='local-me'?'Вы':'Коллега'; const n=names[id]; return n||(id===S.me?'Вы':'Коллега'); }
+function nameOf(id){ if(id==='__none') return 'Без исполнителя'; if(!id) return 'Кто-то'; if(S.mode==='local') return id==='local-me'?'Вы':'Коллега'; const n=names[id]; return n||(id===S.me?'Вы':'Коллега'); }
 async function resolveNames(ids){
   if(!S.user||typeof S.user.profiles!=='function') return;
   const need=[...new Set(ids.filter(id=>typeof id==='string'&&id&&!(id in names)))]; if(!need.length) return;
@@ -730,9 +742,15 @@ async function resolveNames(ids){
 function cfgBrands(){ const b=S.config&&S.config.brands; return Array.isArray(b)?b.filter(x=>typeof x==='string'&&x.trim()).map(x=>x.trim()):[]; }
 function allBrands(){ const c=cfgBrands(); const extra=[...new Set(S.tasks.map(t=>t.brand).filter(b=>b&&!c.includes(b)))].sort((a,b)=>a.localeCompare(b,'ru')); return [...c,...extra]; }
 const ownerId=()=>S.mode==='local'?'local-me':(S.config&&S.config.ownerId)||null;
-const amExecutor=()=>S.isOwner;
+const isHeadUser=()=>S.isOwner||S.role==='head';
+const isDesignerUser=()=>S.isOwner||S.role==='designer';
 const isRequester=t=>t&&t.createdBy===S.me;
-const canEditTask=t=>S.canWrite&&(S.isOwner||isRequester(t));
+const canExecT=t=>S.mode!=='server'?true:(isHeadUser()||(!!t.assignee&&t.assignee===S.me));
+const canManageT=t=>S.mode!=='server'?true:(isHeadUser()||isRequester(t));
+const canReassignT=t=>S.mode==='server'&&(isHeadUser()||(isRequester(t)&&t.status==='new'));
+const amExecutor=()=>S.isOwner;
+const canEditTask=t=>S.canWrite&&(canManageT(t)||canExecT(t));
+const designerIds=()=>Object.keys(names).filter(id=>S.urole[id]==='designer'&&!(S.disabledIds||new Set()).has(id)).sort((a,b)=>a===S.me?-1:b===S.me?1:names[a].localeCompare(names[b],'ru'));
 
 /* ============ boot ============ */
 async function boot(){
@@ -820,14 +838,14 @@ async function showLogin(msg){
 function sanitize(t){
   return { id:t.id, title:str(t.title)||'Без названия', brand:str(t.brand), kind:str(t.kind), desc:str(t.desc), link:str(t.link), resultLink:str(t.resultLink),
     status:ST_NAME[t.status]?t.status:'new', priority:t.priority==='fire'?'fire':'normal',
-    due:str(t.due), dueTime:str(t.dueTime), createdBy:str(t.createdBy), createdAt:+t.createdAt||0, updatedAt:+t.updatedAt||0,
+    due:str(t.due), dueTime:str(t.dueTime), createdBy:str(t.createdBy), assignee:typeof t.assignee==='string'&&t.assignee?t.assignee:null, createdAt:+t.createdAt||0, updatedAt:+t.updatedAt||0,
     statusAt:+t.statusAt||0, doneAt:+t.doneAt||0 };
 }
 
 /* ============ derive ============ */
 function visible(){
   const q=S.q.trim().toLowerCase();
-  return S.tasks.filter(t=>(!S.brand||t.brand===S.brand)&&(!S.who||t.createdBy===S.who)&&(!S.mine||t.createdBy===S.me)&&(!q||(t.title+' '+t.brand+' '+t.kind+' '+t.desc).toLowerCase().includes(q)));
+  return S.tasks.filter(t=>(!S.brand||t.brand===S.brand)&&(!S.who||t.createdBy===S.who)&&(!S.dsg||(S.dsg==='__none'?!t.assignee:t.assignee===S.dsg))&&(!q||(t.title+' '+t.brand+' '+t.kind+' '+t.desc).toLowerCase().includes(q)));
 }
 function byDue(a,b){ const da=dueTs(a),db=dueTs(b); if(da!==db){ if(da==null) return 1; if(db==null) return -1; return da-db; } return (PRIO_RANK[a.priority]-PRIO_RANK[b.priority])||(a.createdAt-b.createdAt); }
 
@@ -845,7 +863,12 @@ function renderSub(){
       S.who?h('span',{class:'ava'},initials(nameOf(S.who))):null, S.who?nameOf(S.who):'Все постановщики', h('span',{class:'caret'},'▾'));
     sub.append(btn);
   }
-  if(!S.isOwner) sub.append(h('button',{class:'chip plain','aria-pressed':String(S.mine),onclick:()=>{S.mine=!S.mine;render();}},'Только мои'));
+  if(S.mode==='server'){
+    const dl=S.dsg==='__none'?'Без исполнителя':S.dsg?nameOf(S.dsg):'Все дизайнеры';
+    const dbtn=h('button',{class:'chip who-chip','aria-pressed':String(!!S.dsg),onclick:e=>openPersonPicker(e.currentTarget,S.dsg,id=>{ S.dsg=id||null; render(); },{ids:[...designerIds(),'__none'],allLabel:'Все дизайнеры'})},
+      S.dsg&&S.dsg!=='__none'?h('span',{class:'ava'},initials(nameOf(S.dsg))):null, h('span',{class:'chip-k'},'Дизайнер:'), dl, h('span',{class:'caret'},'▾'));
+    sub.insertBefore(dbtn, sub.firstChild);
+  }
   const open=S.tasks.filter(t=>t.status!=='done');
   const over=open.filter(isOver).length;
   const today=open.filter(t=>dueTs(t)!=null&&sod(dueTs(t))===sod(Date.now())).length;
@@ -877,14 +900,16 @@ function renderMainInner(){
 }
 
 function card(t){
-  const due=fmtDue(t); const author=t.createdBy;
-  const el=h('button',{class:'card'+(t.status==='done'?' done':''),style:t.brand?`--bc:${brandColor(t.brand)}`:null,draggable:S.isOwner?'true':null,'data-id':t.id,onclick:()=>openTask(t.id)},
+  const due=fmtDue(t); const author=t.createdBy; const asg=t.assignee;
+  const el=h('button',{class:'card'+(t.status==='done'?' done':''),style:t.brand?`--bc:${brandColor(t.brand)}`:null,draggable:canExecT(t)?'true':null,'data-id':t.id,onclick:()=>openTask(t.id)},
     h('div',{class:'c-top'}, t.brand?symEl(t.brand):null, h('span',{class:'c-brand'},t.brand||'Без бренда')),
     h('div',{class:'c-title'},t.title),
     h('div',{class:'c-bot'},
       h('span',{class:'due '+due.cls},due.text),
       t.priority==='fire'&&t.status!=='done'?h('span',{class:'prio'},'● горит'):null,
-      h('span',{class:'ava'+(author===S.me?' me':''),title:'Поставил(а): '+nameOf(author)},initials(nameOf(author)))));
+      S.mode==='server'
+        ? (asg?h('span',{class:'ava'+(asg===S.me?' me':''),title:'Исполнитель: '+nameOf(asg)},initials(nameOf(asg))):h('span',{class:'ava none',title:'Без исполнителя'},'?'))
+        : h('span',{class:'ava'+(author===S.me?' me':''),title:'Поставил(а): '+nameOf(author)},initials(nameOf(author)))));
   el.addEventListener('dragstart',e=>{ e.dataTransfer.setData('text/plain',t.id); e.dataTransfer.effectAllowed='move'; el.classList.add('dragging'); });
   el.addEventListener('dragend',()=>el.classList.remove('dragging'));
   return el;
@@ -1029,6 +1054,7 @@ function renderLoad(m){
   };
   m.append(h('div',{class:'grid2'},p1,p2,
     groupTable('По брендам','Где сейчас основная нагрузка',t=>t.brand||'',k=>h('span',{style:'display:inline-flex;gap:6px;align-items:center;font-weight:700'},k?symEl(k):null,k||'Без бренда')),
+    ...(S.mode==='server'?[groupTable('По дизайнерам','Сколько у кого задач',t=>t.assignee||'',k=>h('span',{style:'display:inline-flex;gap:8px;align-items:center;font-weight:700'},k?h('span',{class:'ava'+(k===S.me?' me':''),style:'margin:0;width:22px;height:22px;font-size:9px'},initials(nameOf(k))):h('span',{class:'ava none',style:'margin:0;width:22px;height:22px;font-size:10px'},'?'),k?nameOf(k):'Без исполнителя'))]:[]),
     groupTable('По постановщикам','Кто сколько задач ставит',t=>t.createdBy||'',k=>h('span',{style:'font-weight:700'},nameOf(k)))));
 }
 
@@ -1166,6 +1192,14 @@ function personField(init,onChange){
   render();
   return {el:btn, get value(){return cur;}};
 }
+function assigneeField(init,onChange){
+  let cur=init||null;
+  const btn=h('button',{type:'button',class:'pp-btn'});
+  const render=()=>btn.replaceChildren(cur?h('span',{class:'ava'+(cur===S.me?' me':'')},initials(nameOf(cur))):h('span',{class:'ava none'},'?'),h('span',{class:'pp-n'},cur?nameOf(cur):'Без исполнителя'),h('span',{class:'caret'},'▾'));
+  btn.addEventListener('click',()=>openPersonPicker(btn,cur,id=>{ cur=id||null; render(); onChange&&onChange(cur); },{ids:designerIds(),allLabel:'Без исполнителя'}));
+  render();
+  return {el:btn, get value(){return cur;}};
+}
 function personOptions(selected){
   const ids=Object.keys(names).filter(id=>names[id]&&!(S.disabledIds||new Set()).has(id)).sort((a,b)=>names[a].localeCompare(names[b],'ru'));
   if(selected&&!ids.includes(selected)) ids.unshift(selected);
@@ -1178,14 +1212,18 @@ function openNew(){
   $('#dTitle').textContent='Новая задача';
   const tomorrow=new Date(Date.now()+DAY); const p=n=>String(n).padStart(2,'0');
   const {wrap,f}=formFields({priority:'normal',due:`${tomorrow.getFullYear()}-${p(tomorrow.getMonth()+1)}-${p(tomorrow.getDate())}`,dueTime:'18:00',brand:S.brand||''},true);
-  const fromSel=S.isOwner&&S.mode==='server'?personField(S.me):null;
+  const fromSel=isHeadUser()&&S.mode==='server'?personField(S.me):null;
+  const asgSel=S.mode==='server'?assigneeField(S.dsg==='__none'?null:(S.dsg||(isDesignerUser()&&!isHeadUser()?S.me:(S.isOwner?S.me:null)))):null;
   $('#dBody').replaceChildren(h('p',{class:'ro',style:'margin:0 0 14px'},'Задача попадёт в колонку «Новые». Вы увидите, когда её возьмут в работу и когда она придёт к вам на проверку.'),
-    ...(fromSel?[h('div',{class:'field'},h('label',{},'От кого'),fromSel.el)]:[]), wrap);
+    h('div',{class:'row'},
+      ...(asgSel?[h('div',{class:'field'},h('label',{},'Исполнитель'),asgSel.el)]:[]),
+      ...(fromSel?[h('div',{class:'field'},h('label',{},'От кого'),fromSel.el)]:[])),
+    wrap);
   const save=h('button',{class:'btn primary',onclick:async()=>{
     const d=readForm(f); if(!d.title){ f.title.focus(); toast('Напишите, что нужно сделать'); return; }
     if(!d.brand){ toast('Выберите бренд'); return; }
     save.disabled=true; const now=Date.now();
-    try{ const id=await store.create({...d,status:'new',createdBy:fromSel?fromSel.value:S.me,createdAt:now,updatedAt:now,statusAt:now});
+    try{ const id=await store.create({...d,status:'new',createdBy:fromSel?fromSel.value:S.me,assignee:asgSel?asgSel.value:undefined,createdAt:now,updatedAt:now,statusAt:now});
       await store.log(id,{kind:'event',text:'Поставил(а) задачу',by:S.me,at:now}).catch(()=>{});
       toast('Задача поставлена'); closeDrawer();
     }catch(e){ toast(errText(e)); save.disabled=false; }
@@ -1216,9 +1254,11 @@ function openSettings(section){
 async function renderPeopleSection(box){
   const list=h('div',{class:'people'});
   const nameIn=h('input',{type:'text',placeholder:'Имя Фамилия',maxlength:'80'});
+  let newRole='manager';
+  const roleSel=h('div',{class:'role-seg'},[['manager','Бренд-менеджер'],['designer','Дизайнер'],['head','Руководитель']].map(([k,l])=>{ const b=h('button',{type:'button','aria-pressed':String(k===newRole),onclick:()=>{ newRole=k; for(const x of roleSel.children) x.setAttribute('aria-pressed',String(x===b)); }},l); return b; }));
   const add=h('button',{class:'btn primary',type:'submit'},'Добавить');
-  const form=h('form',{class:'people-add',onsubmit:async e=>{ e.preventDefault(); const n=nameIn.value.trim().replace(/\s+/g,' '); if(n.split(' ').length<2){ toast('Введите имя и фамилию'); return; } add.disabled=true; try{ const u=await store.api('POST','/people',{name:n}); names[u.id]=u.name; nameIn.value=''; await load(); toast('Добавлен(а): '+u.name); }catch(err){ toast(errText(err)); } add.disabled=false; nameIn.focus(); }},nameIn,add);
-  box.replaceChildren(h('p',{class:'ro',style:'margin:0 0 12px'},'Добавьте коллег — у каждого будет личная ссылка для входа, без паролей и регистрации. Нажмите «Скопировать ссылку» и отправьте человеку в мессенджер.'),form,list);
+  const form=h('form',{class:'people-add',onsubmit:async e=>{ e.preventDefault(); const n=nameIn.value.trim().replace(/\s+/g,' '); if(n.split(' ').length<2){ toast('Введите имя и фамилию'); return; } add.disabled=true; try{ const u=await store.api('POST','/people',{name:n,role:newRole}); names[u.id]=u.name; nameIn.value=''; await load(); toast('Добавлен(а): '+u.name); }catch(err){ toast(errText(err)); } add.disabled=false; nameIn.focus(); }},nameIn,add);
+  box.replaceChildren(h('p',{class:'ro',style:'margin:0 0 12px'},'Добавьте коллег — у каждого будет личная ссылка для входа, без паролей и регистрации. Нажмите «Скопировать ссылку» и отправьте человеку в мессенджер.'),form,roleSel,list);
   async function load(){
     let people=[]; try{ people=await store.api('GET','/people'); }catch(e){ list.replaceChildren(h('div',{class:'ro'},'Не загрузилось')); return; }
     S.disabledIds=new Set(people.filter(p=>p.disabled).map(p=>p.id));
@@ -1229,9 +1269,11 @@ async function renderPeopleSection(box){
       let armed=false;
       const off=!isMe&&!p.disabled?h('button',{class:'linkbtn danger',onclick:async e=>{ const b=e.currentTarget; if(!armed){ armed=true; b.textContent='Точно отключить?'; setTimeout(()=>{armed=false;b.textContent='Отключить';},3000); return; } try{ await store.api('POST','/people/'+p.id+'/disable'); await load(); toast(p.name+' отключён(а)'); }catch(err){ toast(errText(err)); } }},'Отключить'):null;
       const reset=!isMe?h('button',{class:'linkbtn',onclick:async()=>{ try{ await store.api('POST','/people/'+p.id+'/reset'); await load(); toast('Новая ссылка готова — старая больше не работает'); }catch(err){ toast(errText(err)); } }},p.disabled?'Включить':'Новая ссылка'):null;
-      const cnt=S.tasks.filter(t=>t.createdBy===p.id&&t.status!=='done').length;
+      const cnt=S.tasks.filter(t=>(p.role==='designer'?t.assignee===p.id:t.createdBy===p.id)&&t.status!=='done').length;
+      const roleBox=!isMe&&!p.disabled?h('div',{class:'role-seg small'},[['manager','Бренд'],['designer','Дизайнер'],['head','Руководитель']].map(([k,l])=>h('button',{type:'button','aria-pressed':String((p.role||'manager')===k),onclick:async()=>{ if(p.role===k) return; try{ await store.api('PATCH','/people/'+p.id,{role:k}); S.urole[p.id]=k; await load(); render(); toast(p.name+': '+ROLE_LABEL[k]); }catch(err){ toast(errText(err)); } }},l))):null;
       return h('div',{class:'person'+(p.disabled?' off':'')},
-        h('div',{class:'person-main'},h('span',{class:'ava'+(isMe?' me':'')},initials(p.name)),h('div',{},h('div',{class:'person-name'},p.name+(isMe?' (я)':'')),h('div',{class:'person-sub'},isMe?'администратор':p.disabled?'отключён(а)':(p.lastSeen?'заходил(а) '+fmtWhen(p.lastSeen):'ещё не заходил(а)')+(cnt?` · открытых задач: ${cnt}`:'')))),
+        h('div',{class:'person-main'},h('span',{class:'ava'+(isMe?' me':'')},initials(p.name)),h('div',{},h('div',{class:'person-name'},p.name+(isMe?' (я)':'')),h('div',{class:'person-sub'},isMe?'администратор · дизайнер':p.disabled?'отключён(а)':(p.lastSeen?'заходил(а) '+fmtWhen(p.lastSeen):'ещё не заходил(а)')+(cnt?` · ${p.role==='designer'?'в работе у него':'открытых постановок'}: ${cnt}`:'')))),
+        roleBox,
         isMe?null:h('div',{class:'person-act'},copy,reset,off));
     }));
   }
@@ -1265,7 +1307,7 @@ function patchTask(t,patch,note){
   patch.updatedAt=Date.now();
   return store.update(t.id,patch).then(()=>note?store.log(t.id,{kind:'event',text:note,by:S.me,at:Date.now()}):null).catch(e=>toast(errText(e)));
 }
-const canContent=t=>canEditTask(t)&&t.status!=='review'&&t.status!=='done';
+const canContent=t=>S.canWrite&&canManageT(t)&&t.status!=='review'&&t.status!=='done';
 const canPlan=t=>canEditTask(t)&&t.status!=='done';
 function autosize(el){ el.style.height='auto'; el.style.height=el.scrollHeight+'px'; }
 
@@ -1332,13 +1374,19 @@ function renderHead(t){
   const urlInp=h('input',{class:'share-url',readonly:true,value:url,'aria-label':'Ссылка на задачу',onclick:e=>e.target.select()});
   const copyBtn=h('button',{type:'button',class:'btn primary share-btn',onclick:e=>copyTaskLink(t,e.currentTarget,urlInp)},'Копировать');
   const share=h('div',{class:'share'},h('span',{class:'share-k'},'Отправить на проверку — ссылка для бренд-менеджера'),h('div',{class:'share-row'},urlInp,copyBtn));
-  let byEl;
-  if(S.isOwner&&S.mode==='server'){
+  let byEl, asgEl=null;
+  if(S.mode==='server'){
+    if(canReassignT(t)&&t.status!=='done'){
+      const af=assigneeField(t.assignee,v=>patchTask(t,{assignee:v},`Исполнитель: ${t.assignee?nameOf(t.assignee):'нет'} → ${v?nameOf(v):'нет'}`));
+      af.el.classList.add('small'); asgEl=h('span',{class:'by-row'},'Исполнитель: ',af.el);
+    } else asgEl=h('span',{},'Исполнитель: ',h('b',{},t.assignee?nameOf(t.assignee):'не назначен'));
+  }
+  if(isHeadUser()&&S.mode==='server'){
     const pf=personField(t.createdBy,v=>patchTask(t,{createdBy:v},`Постановщик: ${nameOf(t.createdBy)} → ${nameOf(v)}`));
     pf.el.classList.add('small');
     byEl=h('span',{class:'by-row'},'Поставил(а): ',pf.el);
   } else byEl=h('span',{},'Поставил(а): ',h('b',{},nameOf(t.createdBy)));
-  const parts=[title,h('div',{class:'t-by'},byEl),h('div',{class:'pills'},brandPill,duePill,prioPill)];
+  const parts=[title,h('div',{class:'t-by'},byEl,asgEl),h('div',{class:'pills'},brandPill,duePill,prioPill)];
   if(D.brandOpen&&content){
     parts.push(h('div',{class:'pop'},h('div',{class:'brand-pick'},allBrands().map(b=>h('button',{type:'button',class:'chip','aria-pressed':String(t.brand===b),onclick:()=>{ D.brandOpen=false; if(b!==t.brand) patchTask(t,{brand:b},`Бренд: ${t.brand||'—'} → ${b}`); renderHead(t); }},symEl(b),b)))));
   }
@@ -1427,7 +1475,8 @@ function renderLog(){
 function renderActions(t){
   const A=D.actEl; if(!A) return; A.replaceChildren();
   if(!S.canWrite){ A.append(h('span',{class:'spacer'}),h('button',{class:'btn copy-task',onclick:e=>copyTaskLink(t,e.currentTarget)},'🔗 Ссылка на задачу')); return; }
-  const exec=amExecutor(), req=isRequester(t)||S.isOwner;
+  const exec=canExecT(t), req=isRequester(t)||isHeadUser();
+  const canTake=S.mode==='server'&&!t.assignee&&isDesignerUser()&&t.status!=='done';
   const askThen=(placeholder,btnText,required,fn)=>{
     D.askOpen=true;
     const ta=h('textarea',{placeholder,maxlength:'3000',rows:'2'});
@@ -1454,13 +1503,15 @@ function renderActions(t){
     li.focus();
   };
   const btns=[];
-  if(t.status==='new'&&exec) btns.push(h('button',{class:'btn primary',onclick:()=>moveTask(t,'work')},'Взять в работу'));
-  if(t.status==='work'&&exec) btns.push(h('button',{class:'btn primary',onclick:()=>askReview(t)},'Сдать на проверку'));
+  if(canTake) btns.push(h('button',{class:'btn primary',onclick:async()=>{ try{ await store.update(t.id,{assignee:S.me}); await store.log(t.id,{kind:'event',text:'Взял(а) задачу себе',by:S.me,at:Date.now()}); if(t.status==='new') await moveTask({...t,assignee:S.me},'work'); }catch(e){ toast(errText(e)); } }},t.status==='new'?'Взять себе в работу':'Взять себе'));
+  else if(t.status==='new'&&exec&&t.assignee) btns.push(h('button',{class:'btn primary',onclick:()=>moveTask(t,'work')},'Взять в работу'));
+  if(t.status==='work'&&exec&&(t.assignee||S.mode!=='server')) btns.push(h('button',{class:'btn primary',onclick:()=>askReview(t)},'Сдать на проверку'));
   if(t.status==='review'&&req){
     btns.push(h('button',{class:'btn ok',onclick:()=>moveTask(t,'done')},'✓ Принять'));
   }
   if(t.status==='done'&&req) btns.push(h('button',{class:'btn',onclick:()=>askThen('Что ещё нужно сделать','Вернуть в работу',true,v=>moveTask(t,'work',v,'return'))},'Вернуть в работу'));
   if(!btns.length&&t.status==='review') btns.push(h('span',{class:'ro'},'Ждёт решения постановщика'));
+  if(!btns.length&&t.status==='new'&&!t.assignee) btns.push(h('span',{class:'ro'},'Ждёт, когда задачу возьмёт дизайнер'));
   A.append(...btns,h('span',{class:'spacer'}),h('button',{class:'btn copy-task',onclick:e=>copyTaskLink(t,e.currentTarget)},'🔗 Ссылка на задачу'));
 }
 
