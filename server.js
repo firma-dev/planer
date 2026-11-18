@@ -21,8 +21,8 @@ const PUBLIC_DIR = path.join(__dirname, 'public');
 
 if (!DESIGNER_CODE) { console.error('Задайте DESIGNER_CODE (код дизайнера) в переменных окружения.'); process.exit(1); }
 
-const DEFAULT_BRANDS = ['Бадаевский', 'Дом спорта', 'Capital Group', 'Золотой', 'Роза Вельвет', 'Капиталист', 'Темп'];
-const DEFAULT_COLORS = { 'Бадаевский': '#D7263D', 'Дом спорта': '#1E9E5A', 'Capital Group': '#1B2F6E', 'Роза Вельвет': '#C9A27E', 'Золотой': '#F2B705', 'Темп': '#7B3FC4', 'Капиталист': '#35A7E8' };
+const DEFAULT_BRANDS = ['Бадаевский', 'Дом спорта', 'Capital Group', 'Золотой', 'Роза Вельвет', 'Капиталист', 'Темп', 'Узоры'];
+const DEFAULT_COLORS = { 'Бадаевский': '#D7263D', 'Дом спорта': '#1E9E5A', 'Capital Group': '#1B2F6E', 'Роза Вельвет': '#C9A27E', 'Золотой': '#F2B705', 'Темп': '#7B3FC4', 'Капиталист': '#1A1A1E', 'Узоры': '#35A7E8' };
 const STATUSES = ['new', 'work', 'review', 'done'];
 
 // ---------- storage ----------
@@ -90,6 +90,9 @@ function migrate() {
   for (const u of Object.values(db.users)) if (!u.role) { u.role = 'manager'; changed = true; }
   const fallback = adminSess ? adminSess.userId : (Object.values(db.users).find(u => u.role === 'designer') || {}).id;
   if (fallback) for (const t of Object.values(db.tasks)) if (t.assignee === undefined) { t.assignee = fallback; changed = true; }
+  db.config.added = db.config.added || [];
+  if (!db.config.added.includes('Узоры')) { db.config.added.push('Узоры'); if (!db.config.brands.includes('Узоры')) db.config.brands = [...db.config.brands, 'Узоры']; db.config.brandColors = Object.assign({}, db.config.brandColors, { 'Узоры': db.config.brandColors['Узоры'] || '#35A7E8' }); changed = true; }
+  if (!db.config.added.includes('colors-2')) { db.config.added.push('colors-2'); db.config.brandColors = Object.assign({}, db.config.brandColors, { 'Капиталист': '#1A1A1E', 'Узоры': '#35A7E8' }); changed = true; }
   if (changed) save();
 }
 

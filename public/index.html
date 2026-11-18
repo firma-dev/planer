@@ -614,6 +614,8 @@ textarea.t-title:focus{background:var(--card);box-shadow:0 0 0 1.5px var(--ink)}
 .size-row.need{border:1.5px solid var(--warn);background:#FFF8EC;border-radius:12px;padding:10px}
 .sheet-q{font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:8px}
 /* ===== команда ===== */
+@media (min-width:1200px){ .brands .sub{gap:6px;padding-left:0;padding-right:0} .brands .sub .chip{padding-right:9px;font-size:12.5px} .brands .sub .chip.plain{padding:4px 9px} }
+
 .flow-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;align-items:start}
 @media (max-width:900px){.flow-grid{grid-template-columns:1fr}}
 .flow-col{background:#EBE8E1;border-radius:14px;padding:10px}
@@ -711,8 +713,8 @@ const hoursOf=list=>list.reduce((a,t)=>a+(SIZE_H[t.size]||0),0);
 const BRAND_HUES=['#2F5BD3','#C2410C','#0F7B6C','#9333B5','#B45309','#BE185D','#3F6212','#0E7490'];
 const DAY=864e5;
 const APP_URL=location.origin+location.pathname;
-const DEFAULT_BRANDS=['Бадаевский','Дом спорта','Capital Group','Золотой','Роза Вельвет','Капиталист','Темп'];
-const DEFAULT_COLORS={'Бадаевский':'#D7263D','Дом спорта':'#1E9E5A','Capital Group':'#1B2F6E','Роза Вельвет':'#C9A27E','Золотой':'#F2B705','Темп':'#7B3FC4','Капиталист':'#35A7E8'};
+const DEFAULT_BRANDS=['Бадаевский','Дом спорта','Capital Group','Золотой','Роза Вельвет','Капиталист','Темп','Узоры'];
+const DEFAULT_COLORS={'Бадаевский':'#D7263D','Дом спорта':'#1E9E5A','Capital Group':'#1B2F6E','Роза Вельвет':'#C9A27E','Золотой':'#F2B705','Темп':'#7B3FC4','Капиталист':'#1A1A1E','Узоры':'#35A7E8'};
 const WD=['вс','пн','вт','ср','чт','пт','сб'];
 const MON=['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
 
@@ -773,7 +775,7 @@ class ServerStore{
     const st=await this.api('GET','/state');
     S.me=st.me.id; S.isOwner=st.admin!=null?!!st.admin:st.role==='designer'; S.role=st.admin?'admin':(st.role==='member'?'manager':st.role); S.myName=st.me.name;
     for(const u of st.users){ names[u.id]=u.name; S.urole[u.id]=u.role||'manager'; if(u.disabled) (S.disabledIds||(S.disabledIds=new Set())).add(u.id); }
-    if(!S._dsgInit){ S._dsgInit=true; if(S.role==='designer'&&!S.isOwner) S.dsg=S.me; if(!S._viewFromHash&&(S.role==='head'||S.role==='manager')){ S.view='team'; try{history.replaceState(null,'','#team');}catch(e){} } }
+    if(!S._dsgInit){ S._dsgInit=true; if(S.role==='designer'||S.isOwner) S.dsg=S.me; if(!S._viewFromHash&&(S.role==='head'||S.role==='manager')){ S.view='team'; try{history.replaceState(null,'','#team');}catch(e){} } }
     this.tasks=new Map(st.tasks.map(t=>[t.id,t])); this.config=st.config;
     this.emit(); this.emitCfg();
   }
@@ -987,7 +989,8 @@ function renderSub(){
     ppl.push(h('span',{class:'sub-sep'}));
     sub.prepend(...ppl);
   }
-  const open=S.tasks.filter(t=>t.status!=='done');
+  const mineOnly=S.mode==='server'&&(S.isOwner||S.role==='designer');
+  const open=S.tasks.filter(t=>t.status!=='done'&&(!mineOnly||t.assignee===S.me));
   const over=open.filter(isOver).length;
   const today=open.filter(t=>dueTs(t)!=null&&sod(dueTs(t))===sod(Date.now())).length;
   const review=S.tasks.filter(t=>t.status==='review').length;
@@ -1761,7 +1764,7 @@ function renderActions(t){
 }
 
 /* ============ wiring ============ */
-for(const b of $('#tabs').children) b.onclick=()=>{ S.view=b.dataset.v; if(S.fromTeam){ S.dsg=null; S.fromTeam=false; } try{history.replaceState(null,'','#'+S.view);}catch(e){location.hash=S.view;} render(); };
+for(const b of $('#tabs').children) b.onclick=()=>{ const prev=S.view; S.view=b.dataset.v; if(S.fromTeam){ S.dsg=null; S.fromTeam=false; } else if(S.view==='team'&&prev!=='team'){ S._boardDsg=S.dsg; S.dsg=null; } else if(prev==='team'&&S.view!=='team'&&S._boardDsg!==undefined){ S.dsg=S._boardDsg; S._boardDsg=undefined; } try{history.replaceState(null,'','#'+S.view);}catch(e){location.hash=S.view;} render(); };
 function taskHashFull(id){ return 't-'+String(id).replace(/[^A-Za-z0-9-]/g,c=>'-'+c.charCodeAt(0).toString(36)+'-'); }
 function taskHash(id){ return S.mode==='server'?taskHashFull(id):taskHashFull(id).slice(0,8); }
 function findByHash(v){ return S.tasks.find(x=>taskHashFull(x.id)===v)||S.tasks.find(x=>taskHash(x.id)===v); }
