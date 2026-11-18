@@ -609,6 +609,15 @@ textarea.t-title:focus{background:var(--card);box-shadow:0 0 0 1.5px var(--ink)}
 .sheet-t{font-size:17px;font-weight:800;margin-top:2px}
 .sheet-q{font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:8px}
 /* ===== команда ===== */
+.t-sec{--sc:var(--ink3);--sb:#F4F2EE;background:var(--sb);border-radius:12px;padding:0 8px 8px;border-top:4px solid var(--sc);display:flex;flex-direction:column;gap:8px}
+.t-sec[data-st="work"]{--sc:var(--soon);--sb:#EAF0FF}
+.t-sec[data-st="review"]{--sc:var(--warn);--sb:#FFF4E0}
+.t-sec[data-st="done"]{--sc:var(--ok);--sb:#E9F5EE}
+.t-sec .t-st{padding:9px 4px 1px;color:var(--ink);font-size:11.5px}
+.t-sec .t-st .col-dot{background:var(--sc)!important;width:8px;height:8px}
+.t-sec[data-st="done"] .grp-b{opacity:.75}
+.t-body{gap:12px!important}
+
 .sub-sep{width:1px;height:22px;align-self:center;background:var(--line2);margin:0 2px}
 .who-chip .ava.none{background:transparent;border:1.5px dashed var(--ink3);color:var(--ink3)}
 .who-chip[aria-pressed="true"] .ava.none{border-color:#fff;color:#fff}
@@ -949,7 +958,7 @@ function renderSub(){
   const reqs=[...new Set(S.tasks.map(t=>t.createdBy).filter(Boolean))];
   if(reqs.length>1){
     const btn=h('button',{class:'chip who-chip','aria-pressed':String(!!S.who),onclick:e=>openPersonPicker(e.currentTarget,S.who,id=>{ S.who=id||null; render(); },{ids:reqs,allLabel:'Все постановщики'})},
-      S.who?h('span',{class:'ava'},initials(nameOf(S.who))):null, S.who?nameOf(S.who):'Все постановщики', h('span',{class:'caret'},'▾'));
+      S.who?h('span',{class:'ava'},initials(nameOf(S.who))):null, S.who?nameOf(S.who):'Постановщики', h('span',{class:'caret'},'▾'));
     sub.append(btn);
   }
   if(S.mode==='server'){
@@ -1090,8 +1099,8 @@ function renderTeam(m){
       if(st.id==='done'){ list.sort((a,b)=>(b.doneAt||b.statusAt)-(a.doneAt||a.statusAt)); list=list.filter(t=>(t.doneAt||t.statusAt)>=cut); }
       else list.sort(byDue);
       if(!list.length) continue;
-      if(c.id) body.append(h('div',{class:'t-st','data-st':st.id},h('span',{class:'col-dot'}),st.id==='done'?'Готово за неделю':st.name,h('span',{class:'mono'},list.length)));
-      body.append(h('div',{class:'col-body grouped'},...brandGroups(list,mk)));
+      const groups=h('div',{class:'col-body grouped'},...brandGroups(list,mk));
+      body.append(c.id?h('div',{class:'t-sec','data-st':st.id},h('div',{class:'t-st'},h('span',{class:'col-dot'}),st.id==='done'?'Готово за неделю':st.name,h('span',{class:'mono'},list.length)),groups):groups);
     }
     if(!body.children.length) body.append(h('div',{class:'empty'},c.id?'Задач нет':'Новых задач нет'));
     const col=h('section',{class:'col t-col','aria-label':c.name},head,body);
@@ -1216,12 +1225,12 @@ function renderLoad(m){
       rows.length?h('table',{style:'box-shadow:none'},h('thead',{},h('tr',{},h('th',{},''),h('th',{class:'num'},'Открыто'),h('th',{class:'num'},'Проверка'),h('th',{class:'num'},'Просроч.'),h('th',{class:'num'},'Сдано 30 дн'))),
         h('tbody',{},rows.map(r=>h('tr',{style:'cursor:default'},h('td',{},labelFn(r.k)),h('td',{class:'num'},r.open),h('td',{class:'num'},r.review),h('td',{class:'num',style:r.over?'color:var(--bad)':''},r.over),h('td',{class:'num'},r.done30))))):h('div',{class:'empty'},'Нет данных'));
   };
-  m.append(h('div',{class:'grid2'},p1,p2,
-    groupTable('По брендам','Где сейчас основная нагрузка',t=>t.brand||'',k=>h('span',{style:'display:inline-flex;gap:6px;align-items:center;font-weight:700'},k?symEl(k):null,k||'Без бренда')),
+  m.append(h('div',{class:'grid2'},
     ...(S.mode==='server'?[designerTable()]:[]),
     ...(S.mode==='server'&&isHeadUser()?flowPanel():[]),
-    ...(false?[groupTable('По дизайнерам','Сколько у кого задач',t=>t.assignee||'',k=>h('span',{style:'display:inline-flex;gap:8px;align-items:center;font-weight:700'},k?h('span',{class:'ava'+(k===S.me?' me':''),style:'margin:0;width:22px;height:22px;font-size:9px'},initials(nameOf(k))):h('span',{class:'ava none',style:'margin:0;width:22px;height:22px;font-size:10px'},'?'),k?nameOf(k):'Без исполнителя'))]:[]),
-    groupTable('По постановщикам','Кто сколько задач ставит',t=>t.createdBy||'',k=>h('span',{style:'font-weight:700'},nameOf(k)))));
+    groupTable('По брендам','Где сейчас основная нагрузка',t=>t.brand||'',k=>h('span',{style:'display:inline-flex;gap:6px;align-items:center;font-weight:700'},k?symEl(k):null,k||'Без бренда')),
+    groupTable('По постановщикам','Кто сколько задач ставит',t=>t.createdBy||'',k=>h('span',{style:'font-weight:700'},nameOf(k))),
+    p1,p2));
 }
 
 /* ============ actions ============ */
