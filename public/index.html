@@ -615,6 +615,20 @@ textarea.t-title:focus{background:var(--card);box-shadow:0 0 0 1.5px var(--ink)}
 .sheet-q{font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:8px}
 
 /* ===== загрузка ===== */
+.wk-p{display:flex;align-items:center;gap:6px;background:var(--card);border-radius:7px;padding:4px 6px;font-size:12px;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.wk-p .sym{width:18px;height:18px;font-size:9px;border-radius:5px}
+.wk-pn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.wk-ph{font-size:11.5px;color:var(--ink2);white-space:nowrap}
+
+.who-link{display:inline-flex;align-items:center;gap:8px;border:0;background:none;padding:0;font:inherit;color:inherit;text-align:left;flex-wrap:wrap}
+.who-link:hover .wk-nm{text-decoration:underline;text-underline-offset:3px}
+.wk-name .who-link .wk-sum{flex-basis:100%;padding-left:30px;margin-top:-4px}
+.hp th .hp-b{display:inline-flex;gap:6px;align-items:center;text-transform:none;letter-spacing:0;font-weight:700;color:var(--ink);white-space:nowrap}
+.hp td.zero{color:var(--ink3)}
+.hp .hp-tot{font-weight:800}
+.hp tfoot td{font-weight:700;border-top:1px solid var(--line2);padding:10px 12px}
+.hp td .who-link .wk-sum{margin-left:4px}
+
 .p-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
 .sig-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:10px}
 @media (max-width:900px){.sig-row{grid-template-columns:1fr 1fr}}
@@ -1258,6 +1272,8 @@ function renderLoad(m){
   const colOf=t=>{ const d=dueTs(t); if(d==null) return 'later'; if(d<now&&sod(d)<today) return 'over'; const sd=sod(d); if(sd<=today) return days[0]===today?today:'over'; if(sd>lastDay) return 'later'; return days.includes(sd)?sd:days.find(x=>x>=sd)||'later'; };
   const hrs=list=>list.reduce((a,t)=>a+(SIZE_H[t.size]||0),0);
   const cap=(uid,day)=>busyOn(uid,day)?0:N;
+  const openBoard=id=>{ S.dsg=id; S.fromTeam=true; S.view='board'; setHash('board'); render(); window.scrollTo(0,0); };
+  const who=(id,extra)=>h('button',{class:'who-link',title:'Открыть доску',onclick:()=>openBoard(id)},h('span',{class:'ava t-ava'+(id===S.me?' me':'')},initials(nameOf(id))),h('span',{class:'wk-nm'},nameOf(id)),extra||null);
 
   // ---------- 1. сигналы ----------
   const late=tasks.filter(t=>t.status!=='done'&&(isOver(t)||(t.status==='new'&&dueTs(t)!=null&&sod(dueTs(t))===today)));
@@ -1292,8 +1308,7 @@ function renderLoad(m){
   for(const r of rows){
     const mine=loadT.filter(t=>r.id?t.assignee===r.id:!t.assignee);
     const weekH=hrs(mine.filter(t=>days.includes(colOf(t)))); const weekCap=r.id?days.reduce((a,d)=>a+cap(r.id,d),0):0;
-    grid.append(h('div',{class:'wk-name'},r.id?h('span',{class:'ava t-ava'+(r.id===S.me?' me':'')},initials(nameOf(r.id))):h('span',{class:'ava none t-ava'},'?'),
-      h('div',{},h('div',{class:'wk-nm'},r.id?nameOf(r.id):'Без исполнителя'),r.id?h('div',{class:'wk-sum'+(weekH>weekCap?' bad-t':'')},weekH+' из '+weekCap+' ч за 5 дней'):h('div',{class:'wk-sum'},'не распределены'))));
+    grid.append(r.id?h('div',{class:'wk-name'},who(r.id,h('span',{class:'wk-sum'+(weekH>weekCap?' bad-t':'')},weekH+' из '+weekCap+' ч'))):h('div',{class:'wk-name'},h('span',{class:'ava none t-ava'},'?'),h('div',{},h('div',{class:'wk-nm'},'Без исполнителя'),h('div',{class:'wk-sum'},'не распределены'))));
     for(const c of cols){
       const list=mine.filter(t=>colOf(t)===c).sort(byDue); const hh=hrs(list); const unk=list.filter(t=>!t.size).length;
       const isDay=typeof c==='number'; const busy=isDay&&r.id&&busyOn(r.id,c); const cp=isDay&&r.id?cap(r.id,c):0;
@@ -1302,10 +1317,11 @@ function renderLoad(m){
       if(isDay&&r.id) cell.append(h('div',{class:'wk-top'},h('span',{class:'wk-h2'},busy?'занят другим':hh+' / '+cp+' ч'+(unk?' +'+unk+'?':'')),
         (r.id===S.me||isHeadUser())?h('button',{class:'wk-busy',title:busy?'Снять отметку':'Отметить: занят другой работой',onclick:()=>toggleBusy(r.id,c,!busy)},busy?'×':'занят'):null),
         h('div',{class:'wk-bar'},h('i',{style:'width:'+pct+'%'})));
-      else if(list.length) cell.append(h('div',{class:'wk-top'},h('span',{class:'wk-h2'},list.length+' '+plural(list.length,'задача','задачи','задач')+(hh?' · '+hh+' ч':''))));
-      for(const t of list){ const ch=h('button',{class:'wk-t',style:t.brand?`--bc:${brandColor(t.brand)}`:null,draggable:String(canReassignT(t)),title:t.title,onclick:()=>openTask(t.id)},
-          h('span',{class:'wk-tt'},t.title),h('span',{class:'wk-th mono'},t.size?SIZE_H[t.size]+'ч':'?'));
-        ch.addEventListener('dragstart',e=>{ e.dataTransfer.setData('text/plain',t.id); ch.classList.add('dragging'); }); ch.addEventListener('dragend',()=>ch.classList.remove('dragging')); cell.append(ch); }
+      else if(list.length) cell.append(h('div',{class:'wk-top'},h('span',{class:'wk-h2'},(hh?hh+' ч':'')+(unk?(hh?' +':'')+unk+'?':''))));
+      { const bs=[...new Set(list.map(t=>t.brand||''))].sort((a,b)=>hrs(list.filter(t=>(t.brand||'')===b))-hrs(list.filter(t=>(t.brand||'')===a)));
+        for(const b of bs){ const g=list.filter(t=>(t.brand||'')===b); const bh=hrs(g); const bu=g.filter(t=>!t.size).length;
+          cell.append(h('div',{class:'wk-p',style:'--bc:'+(b?brandColor(b):'#9A989F'),title:(b||'Без бренда')+': '+g.length+' '+plural(g.length,'задача','задачи','задач')},
+            b?symEl(b):h('span',{class:'sym'},'—'),h('span',{class:'wk-pn'},b||'Без бренда'),h('span',{class:'wk-ph mono'},(bh?bh+' ч':'')+(bu?(bh?' +':'')+bu+'?':'')))); } }
       cell.addEventListener('dragover',e=>{ e.preventDefault(); cell.classList.add('drop'); });
       cell.addEventListener('dragleave',e=>{ if(!cell.contains(e.relatedTarget)) cell.classList.remove('drop'); });
       cell.addEventListener('drop',async e=>{ e.preventDefault(); cell.classList.remove('drop');
@@ -1319,8 +1335,22 @@ function renderLoad(m){
     }
   }
   const b2=h('section',{class:'panel wide'},h('div',{class:'p-head'},h('div',{},h('h3',{},'Кого можно нагрузить'),
-      h('p',{class:'cap'},'Новые и в работе по срокам на 5 рабочих дней. Перетащи задачу на другого человека или другой день — поменяются исполнитель и срок. «?» — объём не оценён.')),
+      h('p',{class:'cap'},'Сколько часов по каждому проекту приходится на день — по оценкам самих дизайнеров (новые и в работе). «?» — задачи без оценки, в часы не входят. Клик по имени открывает доску дизайнера со всеми задачами.')),
       h('label',{class:'normset'},'Часов в день',normIn)),h('div',{class:'wk-scroll'},grid));
+
+  // ---------- часы по проектам ----------
+  const perP=S.per==='month'?30:7; const fromP=now-perP*DAY;
+  const pt=tasks.filter(t=>t.assignee&&(t.status==='work'||t.status==='review'||(t.status==='done'&&(t.doneAt||t.statusAt)>=fromP)));
+  const pBrands=allBrands().filter(b=>pt.some(t=>t.brand===b&&t.size)); if(pt.some(t=>!t.brand&&t.size)) pBrands.push('');
+  const perSw0=h('div',{class:'seg mini'},[['week','Неделя'],['month','Месяц']].map(([k,l])=>h('button',{'aria-pressed':String((S.per||'week')===k),onclick:()=>{ S.per=k; render(); }},l)));
+  const pRows=people.map(id=>{ const g=pt.filter(t=>t.assignee===id); return {id,by:pBrands.map(b=>hrs(g.filter(t=>(t.brand||'')===b))),tot:hrs(g),unk:g.filter(t=>!t.size).length}; });
+  const bp=h('section',{class:'panel wide'},h('div',{class:'p-head'},h('div',{},h('h3',{},'Часы по проектам'),
+      h('p',{class:'cap'},'Сколько часов у дизайнера ушло на каждый проект: сданное за '+(perP===7?'7 дней':'30 дней')+' плюс то, что сейчас в работе и на проверке. Часы — только из оценок самих дизайнеров.')),perSw0),
+    h('div',{class:'tscroll'},h('table',{class:'hp',style:'box-shadow:none'},
+      h('thead',{},h('tr',{},h('th',{},'Дизайнер'),...pBrands.map(b=>h('th',{class:'num'},h('span',{class:'hp-b'},b?symEl(b):null,b||'Без бренда'))),h('th',{class:'num'},'Всего'))),
+      h('tbody',{},pRows.map(r=>h('tr',{style:'cursor:default'},h('td',{},who(r.id,r.unk?h('span',{class:'wk-sum'},'+'+r.unk+' без оценки'):null)),
+        ...r.by.map(v=>h('td',{class:'num'+(v?'':' zero')},v?v+' ч':'—')),h('td',{class:'num hp-tot'},r.tot+' ч')))),
+      pRows.length>1?h('tfoot',{},h('tr',{},h('td',{},'Итого'),...pBrands.map((b,i)=>h('td',{class:'num'},pRows.reduce((a,r)=>a+r.by[i],0)+' ч')),h('td',{class:'num hp-tot'},pRows.reduce((a,r)=>a+r.tot,0)+' ч'))):null)));
 
   // ---------- 3. где тормозит ----------
   const waitD=tasks.filter(t=>t.status==='new'||t.status==='work'); const waitB=tasks.filter(t=>t.status==='review');
@@ -1347,12 +1377,11 @@ function renderLoad(m){
   const perSw=h('div',{class:'seg mini'},[['week','Неделя'],['month','Месяц']].map(([k,l])=>h('button',{'aria-pressed':String((S.per||'week')===k),onclick:()=>{ S.per=k; render(); }},l)));
   const b4=h('section',{class:'panel'},h('div',{class:'p-head'},h('div',{},h('h3',{},'Итоги'),h('p',{class:'cap'},'Что принято за '+(per===7?'7 дней':'30 дней'))),perSw),
     h('table',{style:'box-shadow:none'},h('thead',{},h('tr',{},h('th',{},'Дизайнер'),h('th',{class:'num'},'Сдано'),h('th',{class:'num'},'≈ часов'),h('th',{class:'num'},'В срок'),h('th',{class:'num'},'Правок'))),
-      h('tbody',{},dz.map(r=>h('tr',{style:'cursor:default'},h('td',{style:'font-weight:700'},nameOf(r.id)),h('td',{class:'num'},r.n),h('td',{class:'num'},r.h),h('td',{class:'num'},r.on),h('td',{class:'num'},r.r))))),
+      h('tbody',{},dz.map(r=>h('tr',{style:'cursor:default'},h('td',{},who(r.id)),h('td',{class:'num'},r.n),h('td',{class:'num'},r.h),h('td',{class:'num'},r.on),h('td',{class:'num'},r.r))))),
     br.length?h('table',{style:'box-shadow:none;margin-top:14px'},h('thead',{},h('tr',{},h('th',{},'Бренд'),h('th',{class:'num'},'Сдано'),h('th',{class:'num'},'Правок в ср.'),h('th',{class:'num'},'Переносов'))),
       h('tbody',{},br.map(r=>h('tr',{style:'cursor:default'},h('td',{},h('span',{style:'display:inline-flex;gap:6px;align-items:center;font-weight:700'},r.b?symEl(r.b):null,r.b||'Без бренда')),h('td',{class:'num'},r.n),h('td',{class:'num',style:r.r!=='—'&&parseFloat(r.r.replace(',','.'))>=2?'color:var(--warn);font-weight:700':''},r.r),h('td',{class:'num',style:r.rs?'color:var(--warn)':''},r.rs))))):h('div',{class:'empty',style:'margin-top:14px'},'За этот период ничего не принято'));
 
-  const parts=[b1,b2,b3,b4];
-  if(isHeadUser()){ const tmp=h('div'); const fp=renderLoadOld(tmp,'flow'); if(fp) parts.push(fp); }
+  const parts=[b1,bp,b2,b3,b4];
   m.append(h('div',{class:'grid2'},...parts));
 }
 function renderLoadOld(m,only){
