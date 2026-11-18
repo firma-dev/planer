@@ -599,7 +599,7 @@ textarea.t-title:focus{background:var(--card);box-shadow:0 0 0 1.5px var(--ink)}
 .size-row{display:block;margin-top:12px}
 .size-row .dp-k{margin-bottom:6px}
 .size-pick button{padding:12px 14px;gap:3px;min-height:76px}
-.size-pick b{font:800 20px inherit;font-family:inherit;letter-spacing:-.01em}
+.size-pick b{font-size:20px}
 .sheet-wrap{position:fixed;inset:0;z-index:90;background:rgba(23,23,27,0);display:flex;align-items:flex-end;justify-content:center;transition:background .18s}
 .sheet-wrap.on{background:rgba(23,23,27,.25)}
 .sheet{width:min(720px,calc(100vw - 24px));background:var(--card);border-radius:18px 18px 0 0;padding:18px 20px 22px;box-shadow:0 -10px 40px -10px rgba(0,0,0,.25);transform:translateY(100%);transition:transform .18s ease-out}
@@ -703,7 +703,7 @@ const PRIO_NAME=Object.fromEntries(PRIOS);
 const PRIO_RANK={fire:0,normal:1};
 const SIZES=[['S',1,'около часа'],['M',3,'пара-тройка часов'],['L',5,'полдня'],['XL',8,'день и больше']];
 const SIZE_H=Object.fromEntries(SIZES.map(([k,hh])=>[k,hh]));
-const sizeLabel=k=>k&&SIZE_H[k]?`≈ ${SIZE_H[k]} ч`:'';
+const sizeLabel=k=>k&&SIZE_H[k]?`${k} · ${SIZE_H[k]} ч`:'';
 function fmtDur(ms){ if(!ms||ms<60e3) return ms?'<1 мин':'—'; const m=Math.round(ms/60e3); if(m<60) return m+' мин'; const hh=Math.round(m/60); if(hh<24) return hh+' ч'; const d=Math.floor(hh/24), r=hh%24; return d+' д'+(r?' '+r+' ч':''); }
 function tStats(t){ const st=t.stats||{}; const now=Date.now(); const live=t.status==='review'?Math.max(0,now-(t.statusAt||now)):0; return {rounds:st.rounds||0,reviewMs:(st.reviewMs||0)+live,reschedules:st.reschedules||0,onTime:t.status==='done'?(st.onTime===undefined?null:st.onTime):(isOver(t)?false:null)}; }
 const hoursOf=list=>list.reduce((a,t)=>a+(SIZE_H[t.size]||0),0);
@@ -1211,7 +1211,7 @@ function renderLoad(m){
       const rounds=d30.length?(d30.reduce((a,t)=>a+tStats(t).rounds,0)/d30.length).toFixed(1).replace('.',','):'—';
       return {k,open:open.length,openH:hoursOf(open),noSize:open.filter(t=>!t.size).length,over:open.filter(isOver).length,d30:d30.length,d30H:hoursOf(d30),ontime,rounds}; }).filter(r=>r.open||r.d30||r.k).sort((a,b)=>b.openH-a.openH||b.open-a.open);
     const lab=k=>h('span',{style:'display:inline-flex;gap:8px;align-items:center;font-weight:700'},k?h('span',{class:'ava'+(k===S.me?' me':''),style:'margin:0;width:22px;height:22px;font-size:9px'},initials(nameOf(k))):h('span',{class:'ava none',style:'margin:0;width:22px;height:22px;font-size:10px'},'?'),k?nameOf(k):'Без исполнителя');
-    return h('section',{class:'panel wide'},h('h3',{},'Загрузка дизайнеров'),h('p',{class:'cap'},'Часы — по оценке объёма: 1, 3, 5 или 8 ч. Оценку ставит дизайнер, когда берёт задачу.'),
+    return h('section',{class:'panel wide'},h('h3',{},'Загрузка дизайнеров'),h('p',{class:'cap'},'Часы — по размеру задач: S≈1 ч, M≈3 ч, L≈5 ч, XL≈8 ч. Оценку ставит дизайнер, когда берёт задачу.'),
       rows.length?h('table',{style:'box-shadow:none'},h('thead',{},h('tr',{},h('th',{},''),h('th',{class:'num'},'Открыто'),h('th',{class:'num'},'≈ часов в очереди'),h('th',{class:'num'},'Без оценки'),h('th',{class:'num'},'Просроч.'),h('th',{class:'num'},'Сдано 30 дн'),h('th',{class:'num'},'≈ часов сдано'),h('th',{class:'num'},'В срок'),h('th',{class:'num'},'Правок в ср.'))),
         h('tbody',{},rows.map(r=>h('tr',{style:'cursor:default'},h('td',{},lab(r.k)),h('td',{class:'num'},r.open),h('td',{class:'num',style:'font-weight:700'},r.openH),h('td',{class:'num',style:r.noSize?'color:var(--warn)':''},r.noSize),h('td',{class:'num',style:r.over?'color:var(--bad)':''},r.over),h('td',{class:'num'},r.d30),h('td',{class:'num'},r.d30H),h('td',{class:'num'},r.ontime),h('td',{class:'num'},r.rounds))))):h('div',{class:'empty'},'Нет данных'));
   };
@@ -1229,7 +1229,7 @@ function renderLoad(m){
                 g.map(t=>{ const x=tStats(t); const m=(k,v,cls)=>h('span',{class:'fm'+(cls?' '+cls:'')},h('span',{class:'fm-k'},k),h('b',{},v));
                   return h('button',{class:'fcard',style:t.brand?`--bc:${brandColor(t.brand)}`:null,onclick:()=>openTask(t.id)},
                     h('div',{class:'fc-t'},t.brand?symEl(t.brand):null,h('span',{},t.title)),
-                    h('div',{class:'fc-m'},m('объём',t.size?SIZE_H[t.size]+' ч':'—'),m('правок',x.rounds,x.rounds>=2?'warn':''),m('ждала',fmtDur(x.reviewMs)),m('переносов',x.reschedules,x.reschedules?'warn':''),
+                    h('div',{class:'fc-m'},m('объём',t.size||'—'),m('правок',x.rounds,x.rounds>=2?'warn':''),m('ждала',fmtDur(x.reviewMs)),m('переносов',x.reschedules,x.reschedules?'warn':''),
                       t.status==='done'?m('в срок',x.onTime===null?'—':x.onTime?'да':'нет',x.onTime===false?'bad':x.onTime?'ok':''):null)); })); }).filter(Boolean);
             return h('div',{class:'flow-col'},h('div',{class:'col-h'},id?h('span',{class:'ava t-ava'+(id===S.me?' me':'')},initials(nameOf(id))):h('span',{class:'col-dot'}),h('span',{class:'col-name'},id?nameOf(id):'Без исполнителя'),h('span',{class:'col-n mono'},mine.length)),
               secs.length?h('div',{class:'col-body',style:'gap:12px'},...secs):h('div',{class:'empty'},'Задач нет')); })); })():h('div',{class:'empty'},'Задач пока нет')),
@@ -1724,7 +1724,7 @@ function sizeSheet(t,onPick){
   document.body.append(wrap); requestAnimationFrame(()=>wrap.classList.add('on')); document.addEventListener('keydown',esc);
 }
 function sizePicker(cur,onPick){
-  return h('div',{class:'size-pick',role:'group','aria-label':'Размер задачи'},SIZES.map(([k,hh,txt])=>h('button',{type:'button','aria-pressed':String(cur===k),onclick:()=>onPick(k)},h('b',{},hh+' ч'),h('span',{class:'sz-t'},txt))));
+  return h('div',{class:'size-pick',role:'group','aria-label':'Размер задачи'},SIZES.map(([k,hh,txt])=>h('button',{type:'button','aria-pressed':String(cur===k),onclick:()=>onPick(k)},h('b',{},k),h('span',{class:'sz-h'},hh+' ч'),h('span',{class:'sz-t'},txt))));
 }
 function renderActions(t){
   const A=D.actEl; if(!A) return; A.replaceChildren();
