@@ -132,6 +132,8 @@ function cleanTask(input, base) {
   if ('dueTime' in input) { const v = str(input.dueTime, 5); if (!isTime(v)) throw Object.assign(new Error('Плохое время'), { status: 400 }); t.dueTime = v; }
   if ('priority' in input) t.priority = input.priority === 'fire' ? 'fire' : 'normal';
   if ('size' in input) t.size = ['S', 'M', 'L', 'XL'].includes(input.size) ? input.size : '';
+  if ('start' in input) { const v = str(input.start, 10); if (!isDate(v)) throw Object.assign(new Error('Плохая дата'), { status: 400 }); t.start = v; }
+  if ('dayH' in input) { const n = Math.round(Number(input.dayH)); t.dayH = n >= 1 && n <= 8 ? n : 0; }
   if ('status' in input) { if (!STATUSES.includes(input.status)) throw Object.assign(new Error('Плохой статус'), { status: 400 }); t.status = input.status; }
   return t;
 }
@@ -297,7 +299,7 @@ async function api(req, res, url) {
       const b = await readBody(req);
       const contentKeys = ['title', 'brand', 'desc', 'link'];
       const touchesContent = contentKeys.some(k => k in b);
-      const touchesPlan = ['due', 'dueTime', 'priority'].some(k => k in b);
+      const touchesPlan = ['due', 'dueTime', 'priority', 'start', 'dayH'].some(k => k in b);
       if ('size' in b && !canExec(a, t)) return send(res, 403, { error: 'Размер ставит исполнитель' });
       if (touchesContent && !canManage(a, t)) return send(res, 403, { error: 'Это не ваша задача' });
       if (touchesPlan && !canEdit(a, t)) return send(res, 403, { error: 'Это не ваша задача' });
