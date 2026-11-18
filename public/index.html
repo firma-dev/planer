@@ -614,13 +614,14 @@ textarea.t-title:focus{background:var(--card);box-shadow:0 0 0 1.5px var(--ink)}
 .size-row.need{border:1.5px solid var(--warn);background:#FFF8EC;border-radius:12px;padding:10px}
 .sheet-q{font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:8px}
 /* ===== команда ===== */
-.t-sec{--sc:var(--ink3);--sb:#F4F2EE;background:var(--sb);border-radius:12px;padding:0 8px 8px;border-top:4px solid var(--sc);display:flex;flex-direction:column;gap:8px}
-.t-sec[data-st="work"]{--sc:var(--soon);--sb:#EAF0FF}
-.t-sec[data-st="review"]{--sc:var(--warn);--sb:#FFF4E0}
-.t-sec[data-st="done"]{--sc:var(--ok);--sb:#E9F5EE}
-.t-sec .t-st{padding:9px 4px 1px;color:var(--ink);font-size:11.5px}
+.t-sec{--sc:var(--ink3);display:flex;flex-direction:column;gap:8px;padding-top:10px;border-top:1px solid #D9D5CC}
+.t-sec:first-child{border-top:0;padding-top:2px}
+.t-sec[data-st="work"]{--sc:var(--soon)}
+.t-sec[data-st="review"]{--sc:var(--warn)}
+.t-sec[data-st="done"]{--sc:var(--ok)}
+.t-sec .t-st{padding:0 4px;color:var(--ink);font-size:11.5px}
 .t-sec .t-st .col-dot{background:var(--sc)!important;width:8px;height:8px}
-.t-sec[data-st="done"] .grp-b{opacity:.75}
+.t-sec[data-st="done"] .grp-b{opacity:.7}
 .t-body{gap:12px!important}
 
 .sub-sep{width:1px;height:22px;align-self:center;background:var(--line2);margin:0 2px}
