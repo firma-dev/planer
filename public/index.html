@@ -607,6 +607,11 @@ textarea.t-title:focus{background:var(--card);box-shadow:0 0 0 1.5px var(--ink)}
 .sheet-h{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
 .sheet-k{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--ink3)}
 .sheet-t{font-size:17px;font-weight:800;margin-top:2px}
+.sheet .res-in,.sheet-ta{width:100%;border:1px solid var(--line2);border-radius:10px;padding:10px 12px;font:inherit;font-size:14px;outline:none;background:#fff;margin-bottom:8px;resize:vertical}
+.sheet .res-in:focus,.sheet-ta:focus{border-color:var(--ink)}
+.sheet-go{display:flex;justify-content:flex-end;margin-top:4px}
+.sheet .size-pick{margin-bottom:12px}
+.size-row.need{border:1.5px solid var(--warn);background:#FFF8EC;border-radius:12px;padding:10px}
 .sheet-q{font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:8px}
 /* ===== команда ===== */
 .t-sec{--sc:var(--ink3);--sb:#F4F2EE;background:var(--sb);border-radius:12px;padding:0 8px 8px;border-top:4px solid var(--sc);display:flex;flex-direction:column;gap:8px}
@@ -1236,6 +1241,7 @@ function renderLoad(m){
 /* ============ actions ============ */
 async function moveTask(t,to,comment,kind){
   if(!S.canWrite) return;
+  if(to==='review'&&t.status!=='review'&&!kind&&S.mode==='server'&&canExecT(t)) return reviewSheet(t);
   if(to==='work'&&t.status==='new'&&!t.size&&S.mode==='server'&&canExecT(t)){ return sizeSheet(t,async k=>{ await store.update(t.id,{size:k}); await store.log(t.id,{kind:'event',text:'Размер: '+sizeLabel(k),by:S.me,at:Date.now()}); await moveTask({...t,size:k},'work'); }); }
   const now=Date.now(); const patch={status:to,statusAt:now,updatedAt:now};
   if(to==='done') patch.doneAt=now;
@@ -1564,7 +1570,7 @@ function renderHead(t){
   } else byEl=h('span',{},'Поставил(а): ',h('b',{},nameOf(t.createdBy)));
   const canSize=S.canWrite&&canExecT(t)&&t.status!=='done';
   const sizePill=(t.size&&!canSize)?h('span',{class:'pill',style:'cursor:default'},h('span',{class:'pill-k'},'Размер'),h('span',{class:'mono'},sizeLabel(t.size))):null;
-  const sizeRow=(canSize&&t.status!=='new'&&t.size)?h('div',{class:'size-row'},h('div',{class:'dp-k'},'Объём работы'),
+  const sizeRow=canSize?h('div',{class:'size-row'+(t.size||t.status==='new'?'':' need')},h('div',{class:'dp-k'},t.size||t.status==='new'?'Объём работы':'Оцени объём работы'),
     sizePicker(t.size,k=>{ if(k!==t.size) patchTask(t,{size:k},`Размер: ${t.size?sizeLabel(t.size):'—'} → ${sizeLabel(k)}`); })):null;
   const parts=[title,h('div',{class:'t-by'},byEl,asgEl),h('div',{class:'pills'},brandPill,duePill,prioPill,sizePill),sizeRow].filter(Boolean);
   if(isHeadUser()&&S.mode==='server'){
@@ -1660,6 +1666,37 @@ function renderLog(){
   if(D.histOpen) parts.push(h('div',{class:'hist'},events.map(l=>h('div',{class:'hist-i'},h('span',{class:'when'},fmtWhen(+l.at)),h('span',{class:'hist-t'},l.text.replace(/\n/g,' · ')),h('span',{class:'hist-w'},nameOf(l.by))))));
   D.histEl.replaceChildren(...parts);
 }
+function reviewSheet(t){
+  document.querySelector('.sheet-wrap')?.remove();
+  let size=t.size||'';
+  const close=()=>{ wrap.classList.remove('on'); setTimeout(()=>wrap.remove(),180); document.removeEventListener('keydown',esc); };
+  const esc=e=>{ if(e.key==='Escape') close(); };
+  const li=h('input',{type:'url',class:'res-in',placeholder:'Ссылка на результат, если есть — https://disk.yandex.ru/…',value:t.resultLink||''});
+  const ci=h('textarea',{class:'sheet-ta',placeholder:'Комментарий (необязательно)',maxlength:'3000',rows:'2'});
+  const go=h('button',{class:'btn primary',onclick:async()=>{
+    const url=li.value.trim();
+    if(url&&!/^https?:\/\/\S+$/i.test(url)){ li.focus(); toast('Ссылка должна начинаться с https://'); return; }
+    if(!size){ toast('Оцени объём работы'); return; }
+    go.disabled=true; const now=Date.now();
+    try{
+      const patch={status:'review',statusAt:now,updatedAt:now}; if(url) patch.resultLink=url; if(size!==t.size) patch.size=size;
+      await store.update(t.id,patch);
+      await store.log(t.id,{kind:'event',text:`${ST_NAME[t.status]} → ${ST_NAME.review}`+(size!==t.size?' · размер '+sizeLabel(size):''),by:S.me,at:now});
+      const txt=(url?'Результат: '+url:'')+(url&&ci.value.trim()?'\n':'')+ci.value.trim();
+      if(txt) await store.log(t.id,{kind:'comment',text:txt,by:S.me,at:now+1});
+    }catch(e){ toast(errText(e)); go.disabled=false; return; }
+    close(); D.askOpen=false; if(D.id===t.id) refreshDrawer();
+  }},'Отправить на проверку');
+  const sizeBox=t.size?null:h('div',{},h('div',{class:'sheet-q'},'Сколько заняла задача?'),(()=>{ const box=h('div'); const draw=()=>box.replaceChildren(sizePicker(size,k=>{ size=k; draw(); })); draw(); return box; })());
+  const wrap=h('div',{class:'sheet-wrap',onclick:e=>{ if(e.target===wrap) close(); }},
+    h('div',{class:'sheet',role:'dialog','aria-label':'Сдать на проверку'},
+      h('div',{class:'sheet-h'},h('div',{},h('div',{class:'sheet-k'},'Сдаёшь на проверку'),h('div',{class:'sheet-t'},t.title)),h('button',{class:'btn ghost',onclick:close},'Отмена')),
+      sizeBox,
+      h('div',{class:'sheet-q'},'Ссылка на результат'),li,ci,
+      h('div',{class:'sheet-go'},go)));
+  document.body.append(wrap); requestAnimationFrame(()=>wrap.classList.add('on')); document.addEventListener('keydown',esc); setTimeout(()=>li.focus(),50);
+  li.addEventListener('keydown',e=>{ if(e.key==='Enter') go.click(); });
+}
 function sizeSheet(t,onPick){
   document.querySelector('.sheet-wrap')?.remove();
   const close=()=>{ wrap.classList.remove('on'); setTimeout(()=>wrap.remove(),180); document.removeEventListener('keydown',esc); };
@@ -1686,24 +1723,7 @@ function renderActions(t){
     A.replaceChildren(h('div',{class:'ask on'},ta,h('div',{style:'display:flex;gap:8px'},go,h('button',{class:'btn ghost',onclick:()=>{D.askOpen=false;renderActions(t);}},'Отмена'))));
     ta.focus();
   };
-  const askReview=t=>{
-    D.askOpen=true;
-    const li=h('input',{type:'url',class:'res-in',placeholder:'https://disk.yandex.ru/…',value:t.resultLink||''});
-    const ci=h('textarea',{placeholder:'Комментарий (необязательно)',maxlength:'3000',rows:'2'});
-    const go=h('button',{class:'btn primary',onclick:async()=>{
-      const url=li.value.trim();
-      if(!/^https?:\/\/\S+$/i.test(url)){ li.focus(); toast('Вставьте ссылку на результат'); return; }
-      go.disabled=true; const now=Date.now();
-      try{
-        await store.update(t.id,{status:'review',statusAt:now,updatedAt:now,resultLink:url});
-        await store.log(t.id,{kind:'event',text:`${ST_NAME[t.status]} → ${ST_NAME.review}`,by:S.me,at:now});
-        await store.log(t.id,{kind:'comment',text:'Результат: '+url+(ci.value.trim()?'\n'+ci.value.trim():''),by:S.me,at:now+1});
-      }catch(e){ toast(errText(e)); go.disabled=false; return; }
-      D.askOpen=false; refreshDrawer();
-    }},'Отправить на проверку');
-    A.replaceChildren(h('div',{class:'ask on'},h('label',{class:'res-k'},'Ссылка на результат'),li,ci,h('div',{style:'display:flex;gap:8px'},go,h('button',{class:'btn ghost',onclick:()=>{D.askOpen=false;renderActions(t);}},'Отмена'))));
-    li.focus();
-  };
+  const askReview=t=>reviewSheet(t);
   const askSize=(after)=>{
     D.askOpen=true;
     A.replaceChildren(h('div',{class:'ask on'},h('label',{class:'res-k'},'Сколько займёт задача?'),
@@ -1711,13 +1731,9 @@ function renderActions(t){
       h('div',{style:'display:flex;gap:8px'},h('button',{class:'btn ghost',onclick:()=>{D.askOpen=false;renderActions(t);}},'Отмена'))));
   };
   const btns=[];
-  if(canTake) btns.push(h('button',{class:'btn primary',onclick:()=>askSize(async k=>{ await store.update(t.id,{assignee:S.me,size:k}); await store.log(t.id,{kind:'event',text:'Взял(а) задачу себе · размер '+sizeLabel(k),by:S.me,at:Date.now()}); if(t.status==='new') await moveTask({...t,assignee:S.me,size:k},'work'); })},t.status==='new'?'Взять себе в работу':'Взять себе'));
-  else if(t.status==='new'&&exec&&(t.assignee||S.mode!=='server')) btns.push(h('button',{class:'btn primary',onclick:()=>askSize(async k=>{ await store.update(t.id,{size:k}); await store.log(t.id,{kind:'event',text:'Размер: '+sizeLabel(k),by:S.me,at:Date.now()}); await moveTask({...t,size:k},'work'); })},'Взять в работу'));
-  if(t.status==='work'&&exec&&(t.assignee||S.mode!=='server')&&!t.size&&S.mode==='server'){
-    A.replaceChildren(h('div',{class:'ask on size-need'},h('label',{class:'res-k'},'Оцени размер работы — без этого задачу не сдать'),
-      sizePicker('',async k=>{ try{ await store.update(t.id,{size:k}); await store.log(t.id,{kind:'event',text:'Размер: '+sizeLabel(k),by:S.me,at:Date.now()}); }catch(e){ toast(errText(e)); } refreshDrawer(); })));
-    return;
-  }
+  const takeSelf=async k=>{ await store.update(t.id,{assignee:S.me,size:k}); await store.log(t.id,{kind:'event',text:'Взял(а) задачу себе · размер '+sizeLabel(k),by:S.me,at:Date.now()}); if(t.status==='new') await moveTask({...t,assignee:S.me,size:k},'work'); };
+  if(canTake) btns.push(h('button',{class:'btn primary',onclick:()=>sizeSheet(t,takeSelf)},t.status==='new'?'Взять себе в работу':'Взять себе'));
+  else if(t.status==='new'&&exec&&(t.assignee||S.mode!=='server')) btns.push(h('button',{class:'btn primary',onclick:()=>moveTask(t,'work')},'Взять в работу'));
   if(t.status==='work'&&exec&&(t.assignee||S.mode!=='server')) btns.push(h('button',{class:'btn primary',onclick:()=>askReview(t)},'Сдать на проверку'));
   if(t.status==='review'&&req){
     btns.push(h('button',{class:'btn ok',onclick:()=>moveTask(t,'done')},'✓ Принять'));
