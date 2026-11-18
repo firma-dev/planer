@@ -615,7 +615,9 @@ textarea.t-title:focus{background:var(--card);box-shadow:0 0 0 1.5px var(--ink)}
 .sheet-q{font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:8px}
 
 /* ===== загрузка ===== */
-.wk-p{display:flex;align-items:center;gap:6px;background:var(--card);border-radius:7px;padding:4px 6px;font-size:12px;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.wk-p:hover{box-shadow:0 2px 8px -2px rgba(0,0,0,.25)}
+.wk-c:hover{background:#EDEAE4}
+.wk-p{cursor:pointer;display:flex;align-items:center;gap:6px;background:var(--card);border-radius:7px;padding:4px 6px;font-size:12px;box-shadow:0 1px 2px rgba(0,0,0,.06)}
 .wk-p .sym{width:18px;height:18px;font-size:9px;border-radius:5px}
 .wk-pn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
 .wk-ph{font-size:11.5px;color:var(--ink2);white-space:nowrap}
@@ -654,7 +656,7 @@ button.sig-it:hover{background:#F6F4F0}
 .wk-name{display:flex;gap:8px;align-items:flex-start;padding:8px 4px}
 .wk-nm{font-weight:800;font-size:13px}
 .wk-sum{font-size:11.5px;color:var(--ink3);margin-top:2px}
-.wk-c{background:#F4F2EE;border-radius:10px;padding:7px;display:flex;flex-direction:column;gap:4px;min-height:64px;outline:2px dashed transparent;outline-offset:-2px}
+.wk-c{cursor:pointer;background:#F4F2EE;border-radius:10px;padding:7px;display:flex;flex-direction:column;gap:4px;min-height:64px;outline:2px dashed transparent;outline-offset:-2px}
 .wk-c.drop{outline-color:var(--ink3);background:#ECE9E2}
 .wk-c.busy{background:repeating-linear-gradient(135deg,#EFECE6 0 6px,#E6E2DA 6px 12px)}
 .wk-c.late{background:var(--bad-bg)}
@@ -1037,7 +1039,7 @@ function render(){ renderTabs(); renderSub(); renderNotes(); renderMain(); }
 function renderTabs(){ if(S.view==='team'&&S.mode!=='server') S.view='board';
   const headOnly=S.mode==='server'&&S.role==='head'&&!S.isOwner;
   if(headOnly&&(S.view==='list'||(S.view==='board'&&!S.fromTeam))){ S.view='team'; S.dsg=null; if(!location.hash.startsWith('#t-')) setHash('team'); }
-  const cur=(S.view==='board'&&S.fromTeam)?'team':S.view;
+  const cur=(S.view==='board'&&S.fromTeam)?(S.backView||'team'):S.view;
   for(const b of $('#tabs').children){ const v=b.dataset.v; b.style.display=(v==='team'&&S.mode!=='server')||(headOnly&&(v==='board'||v==='list'))?'none':''; b.setAttribute('aria-pressed',String(v===cur)); } $('#newBtn').disabled=!S.canWrite; $('#newBtn').style.display='none'; }
 function renderSub(){
   const sub=$('#sub'); sub.replaceChildren();
@@ -1051,7 +1053,7 @@ function renderSub(){
     sub.append(btn);
   }
   if(S.mode==='server'){
-    const ppl=[h('button',{class:'chip plain','aria-pressed':String(!S.dsg),onclick:()=>{ if(S.fromTeam){ S.view='team'; setHash('team'); } S.dsg=null; S.fromTeam=false; render(); }},'Все люди')];
+    const ppl=[h('button',{class:'chip plain','aria-pressed':String(!S.dsg),onclick:()=>{ if(S.fromTeam){ S.view=S.backView||'team'; setHash(S.view); if(S._tmpBrand){ S.brand=null; S._tmpBrand=false; } } S.backView=null; S.dsg=null; S.fromTeam=false; render(); }},'Все люди')];
     for(const id of designerIds()) ppl.push(h('button',{class:'chip who-chip','aria-pressed':String(S.dsg===id),onclick:()=>{ S.dsg=S.dsg===id?null:id; if(!S.dsg) S.fromTeam=false; else if(S.view==='team'){ S.fromTeam=true; S.view='board'; setHash('board'); } render(); }},h('span',{class:'ava'},initials(nameOf(id))),nameOf(id)));
     ppl.push(h('span',{class:'sub-sep'}));
     sub.prepend(...ppl);
@@ -1181,7 +1183,7 @@ function renderTeam(m){
       c.id?h('span',{class:'ava t-ava'+(c.id===S.me?' me':'')},initials(c.name)):h('span',{class:'col-dot'}),
       h('span',{class:'col-name'},c.name),h('span',{class:'col-n mono'},open.length),
       c.id?h('span',{class:'t-go'},'Открыть →'):null);
-    if(c.id){ head.classList.add('t-click'); head.title='Открыть доску: '+c.name; head.onclick=()=>{ S.dsg=c.id; S.fromTeam=true; S.view='board'; setHash('board'); render(); window.scrollTo(0,0); }; }
+    if(c.id){ head.classList.add('t-click'); head.title='Открыть доску: '+c.name; head.onclick=()=>{ S.backView='team'; S.dsg=c.id; S.fromTeam=true; S.view='board'; setHash('board'); render(); window.scrollTo(0,0); }; }
     const body=h('div',{class:'col-body t-body'});
     const sts=c.id?STATUSES:STATUSES.filter(st=>st.id!=='done');
     for(const st of sts){
@@ -1272,7 +1274,7 @@ function renderLoad(m){
   const colOf=t=>{ const d=dueTs(t); if(d==null) return 'later'; if(d<now&&sod(d)<today) return 'over'; const sd=sod(d); if(sd<=today) return days[0]===today?today:'over'; if(sd>lastDay) return 'later'; return days.includes(sd)?sd:days.find(x=>x>=sd)||'later'; };
   const hrs=list=>list.reduce((a,t)=>a+(SIZE_H[t.size]||0),0);
   const cap=(uid,day)=>busyOn(uid,day)?0:N;
-  const openBoard=id=>{ S.dsg=id; S.fromTeam=true; S.view='board'; setHash('board'); render(); window.scrollTo(0,0); };
+  const openBoard=id=>{ S.backView='load'; S.dsg=id; S.fromTeam=true; S.view='board'; setHash('board'); render(); window.scrollTo(0,0); };
   const who=(id,extra)=>h('button',{class:'who-link',title:'Открыть доску',onclick:()=>openBoard(id)},h('span',{class:'ava t-ava'+(id===S.me?' me':'')},initials(nameOf(id))),h('span',{class:'wk-nm'},nameOf(id)),extra||null);
 
   // ---------- 1. сигналы ----------
@@ -1315,13 +1317,14 @@ function renderLoad(m){
       const pct=cp?Math.min(100,hh/cp*100):(hh?100:0); const over=isDay&&r.id&&hh>cp;
       const cell=h('div',{class:'wk-c'+(busy?' busy':'')+(over?' over':'')+(c==='over'&&list.length?' late':'')});
       if(isDay&&r.id) cell.append(h('div',{class:'wk-top'},h('span',{class:'wk-h2'},busy?'занят другим':hh+' / '+cp+' ч'+(unk?' +'+unk+'?':'')),
-        (r.id===S.me||isHeadUser())?h('button',{class:'wk-busy',title:busy?'Снять отметку':'Отметить: занят другой работой',onclick:()=>toggleBusy(r.id,c,!busy)},busy?'×':'занят'):null),
+        (r.id===S.me||isHeadUser())?h('button',{class:'wk-busy',title:busy?'Снять отметку':'Отметить: занят другой работой',onclick:e=>{ e.stopPropagation(); toggleBusy(r.id,c,!busy); }},busy?'×':'занят'):null),
         h('div',{class:'wk-bar'},h('i',{style:'width:'+pct+'%'})));
       else if(list.length) cell.append(h('div',{class:'wk-top'},h('span',{class:'wk-h2'},(hh?hh+' ч':'')+(unk?(hh?' +':'')+unk+'?':''))));
       { const bs=[...new Set(list.map(t=>t.brand||''))].sort((a,b)=>hrs(list.filter(t=>(t.brand||'')===b))-hrs(list.filter(t=>(t.brand||'')===a)));
         for(const b of bs){ const g=list.filter(t=>(t.brand||'')===b); const bh=hrs(g); const bu=g.filter(t=>!t.size).length;
-          cell.append(h('div',{class:'wk-p',style:'--bc:'+(b?brandColor(b):'#9A989F'),title:(b||'Без бренда')+': '+g.length+' '+plural(g.length,'задача','задачи','задач')},
+          cell.append(h('div',{class:'wk-p',style:'--bc:'+(b?brandColor(b):'#9A989F'),title:(b||'Без бренда')+': '+g.length+' '+plural(g.length,'задача','задачи','задач')+' — открыть',onclick:e=>{ e.stopPropagation(); if(b){ S.brand=b; S._tmpBrand=true; } openBoard(r.id||'__none'); }},
             b?symEl(b):h('span',{class:'sym'},'—'),h('span',{class:'wk-pn'},b||'Без бренда'),h('span',{class:'wk-ph mono'},(bh?bh+' ч':'')+(bu?(bh?' +':'')+bu+'?':'')))); } }
+      cell.addEventListener('click',()=>openBoard(r.id||'__none')); cell.title='Открыть доску';
       cell.addEventListener('dragover',e=>{ e.preventDefault(); cell.classList.add('drop'); });
       cell.addEventListener('dragleave',e=>{ if(!cell.contains(e.relatedTarget)) cell.classList.remove('drop'); });
       cell.addEventListener('drop',async e=>{ e.preventDefault(); cell.classList.remove('drop');
@@ -1962,7 +1965,7 @@ function renderActions(t){
 }
 
 /* ============ wiring ============ */
-for(const b of $('#tabs').children) b.onclick=()=>{ const prev=S.view; S.view=b.dataset.v; if(S.fromTeam){ S.dsg=null; S.fromTeam=false; } else if(S.view==='team'&&prev!=='team'){ S._boardDsg=S.dsg; S.dsg=null; } else if(prev==='team'&&S.view!=='team'&&S._boardDsg!==undefined){ S.dsg=S._boardDsg; S._boardDsg=undefined; } try{history.replaceState(null,'','#'+S.view);}catch(e){location.hash=S.view;} render(); };
+for(const b of $('#tabs').children) b.onclick=()=>{ const prev=S.view; S.view=b.dataset.v; if(S.fromTeam){ S.dsg=null; S.fromTeam=false; S.backView=null; if(S._tmpBrand){ S.brand=null; S._tmpBrand=false; } } else if(S.view==='team'&&prev!=='team'){ S._boardDsg=S.dsg; S.dsg=null; } else if(prev==='team'&&S.view!=='team'&&S._boardDsg!==undefined){ S.dsg=S._boardDsg; S._boardDsg=undefined; } try{history.replaceState(null,'','#'+S.view);}catch(e){location.hash=S.view;} render(); };
 function taskHashFull(id){ return 't-'+String(id).replace(/[^A-Za-z0-9-]/g,c=>'-'+c.charCodeAt(0).toString(36)+'-'); }
 function taskHash(id){ return S.mode==='server'?taskHashFull(id):taskHashFull(id).slice(0,8); }
 function findByHash(v){ return S.tasks.find(x=>taskHashFull(x.id)===v)||S.tasks.find(x=>taskHash(x.id)===v); }
