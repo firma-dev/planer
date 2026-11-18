@@ -587,31 +587,31 @@ textarea.t-title:focus{background:var(--card);box-shadow:0 0 0 1.5px var(--ink)}
 @media (max-width:760px){ .me-id{height:34px} .me-id .ava{width:26px;height:26px} .me-box .icon-btn{width:34px;height:34px} }
 .acc-card .me-role{display:inline-flex}
 
+
+.size-row{display:flex;align-items:center;gap:10px;margin-top:8px}
+.size-seg{display:inline-flex;background:#EBE8E1;border-radius:10px;padding:3px;gap:2px}
+.size-seg button{border:0;background:none;border-radius:8px;padding:5px 10px;font-size:12.5px;color:var(--ink2);white-space:nowrap}
+.size-seg button b{font-family:"JetBrains Mono",monospace;color:var(--ink)}
+.size-seg button:hover{background:#E0DCD3}
+.size-seg button[aria-pressed="true"]{background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.size-need{border:1.5px solid var(--warn);border-radius:12px;padding:12px;background:#FFF8EC}
 /* ===== команда ===== */
-.team{display:grid;grid-template-columns:minmax(0,.8fr) repeat(var(--n),minmax(0,1fr));gap:14px;align-items:stretch}
-@media (max-width:900px){.team{grid-template-columns:1fr}}
-.tcol{background:#EBE8E1;border-radius:14px;display:flex;flex-direction:column;max-height:calc(100vh - 230px);min-height:260px;outline:2px dashed transparent;outline-offset:-2px;transition:background .15s,outline-color .15s}
-.tcol.over{background:#E2DED5;outline-color:var(--ink3)}
-.tcol-h{display:flex;align-items:center;gap:10px;padding:12px 12px 10px;border-bottom:1px solid #DEDAD1;border-radius:14px 14px 0 0;text-align:left;background:none;border-left:0;border-right:0;border-top:0;width:100%;font:inherit;color:inherit}
-button.tcol-h{cursor:pointer}
-button.tcol-h:hover{background:#E4E0D8}
-.tcol-h .ava{width:34px;height:34px;font-size:12px;border-radius:10px;margin:0;flex:none}
-.tcol-h .ava.none{border-style:dashed}
-.tcol-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-.tcol-name{font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tcol-meta{font-size:11.5px;color:var(--ink3);display:flex;gap:8px;flex-wrap:wrap}
-.tcol-meta .bad{color:var(--bad);font-weight:700}
-.tcol-go{font-size:12px;font-weight:700;color:var(--ink3);white-space:nowrap}
-button.tcol-h:hover .tcol-go{color:var(--ink)}
-.tcol-body{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:14px;overscroll-behavior:contain}
-.tsec{display:flex;flex-direction:column;gap:6px}
-.tsec-h{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--ink2);padding:0 2px}
-.tsec-h .col-dot{width:7px;height:7px}
-.tsec-h .n{color:var(--ink3);font-weight:600}
-.tsec[data-st="work"] .col-dot{background:var(--soon)}
-.tsec[data-st="review"] .col-dot{background:var(--warn)}
-.tsec[data-st="done"] .col-dot{background:var(--ok)}
-.tsec-more{align-self:flex-start;font-size:12px;color:var(--ink2);background:none;border:0;padding:2px;text-decoration:underline}
+.board.team{grid-template-columns:repeat(var(--n),minmax(0,1fr))}
+.t-col{display:flex;flex-direction:column;max-height:calc(100vh - 200px)}
+.t-col>.col-h{padding-bottom:10px;border-radius:8px}
+.t-click{cursor:pointer}
+.t-click:hover .col-name{text-decoration:underline;text-underline-offset:3px}
+.t-ava{width:22px;height:22px;font-size:9px;margin:0;flex:none}
+.t-go{margin-left:auto;font-size:11.5px;font-weight:700;color:var(--ink3);white-space:nowrap}
+.t-click:hover .t-go{color:var(--ink)}
+.t-body{flex:1;overflow-y:auto;overscroll-behavior:contain;gap:8px;margin:0 -4px;padding:0 4px 4px}
+.t-st{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--ink2);padding:6px 6px 0}
+.t-st .mono{color:var(--ink3);font-weight:500}
+.t-st .col-dot{width:7px;height:7px}
+.t-st[data-st="work"] .col-dot{background:var(--soon)}
+.t-st[data-st="review"] .col-dot{background:var(--warn)}
+.t-st[data-st="done"] .col-dot{background:var(--ok)}
+@media (max-width:900px){.board.team{grid-template-columns:1fr}.t-col{max-height:none}}
 .back-chip{display:inline-flex;align-items:center;gap:8px;margin-bottom:10px}
 .back-chip .ava{margin:0;width:22px;height:22px;font-size:9px}
 </style>
@@ -920,7 +920,11 @@ function byDue(a,b){ const da=dueTs(a),db=dueTs(b); if(da!==db){ if(da==null) re
 
 /* ============ render ============ */
 function render(){ renderTabs(); renderSub(); renderNotes(); renderMain(); }
-function renderTabs(){ if(S.view==='team'&&S.mode!=='server') S.view='board'; $('#teamTab').style.display=S.mode==='server'?'':'none'; for(const b of $('#tabs').children) b.setAttribute('aria-pressed',String(b.dataset.v===S.view)); $('#newBtn').disabled=!S.canWrite; $('#newBtn').style.display='none'; }
+function renderTabs(){ if(S.view==='team'&&S.mode!=='server') S.view='board';
+  const headOnly=S.mode==='server'&&S.role==='head'&&!S.isOwner;
+  if(headOnly&&(S.view==='list'||(S.view==='board'&&!S.fromTeam))){ S.view='team'; S.dsg=null; }
+  const cur=(S.view==='board'&&S.fromTeam)?'team':S.view;
+  for(const b of $('#tabs').children){ const v=b.dataset.v; b.style.display=(v==='team'&&S.mode!=='server')||(headOnly&&(v==='board'||v==='list'))?'none':''; b.setAttribute('aria-pressed',String(v===cur)); } $('#newBtn').disabled=!S.canWrite; $('#newBtn').style.display='none'; }
 function renderSub(){
   const sub=$('#sub'); sub.replaceChildren();
   const brands=allBrands();
@@ -1017,6 +1021,13 @@ function renderLanes(m){
   if(!wrap.children.length){ m.append(h('div',{class:'empty',style:'padding:40px'},S.tasks.length?'По этому фильтру задач нет':'Задач пока нет. Нажмите «+ Поставить задачу», чтобы добавить первую.')); return; }
   m.append(head,wrap);
 }
+function brandGroups(list,mk){
+  const order=allBrands(); const keys=[...new Set(list.map(t=>t.brand||''))].sort((a,b)=>{const ia=a?order.indexOf(a):1e9, ib=b?order.indexOf(b):1e9; return ia-ib;});
+  return keys.map(b=>{ const g=list.filter(t=>(t.brand||'')===b); const c=b?brandColor(b):'#9A989F';
+    return h('div',{class:'grp-b',style:`--lc:${c};--lt:${tint(c,.08)}`},
+      h('div',{class:'grp-h'},b?symEl(b):null,h('span',{class:'grp-name'},b||'Без бренда'),h('span',{class:'grp-n mono'},g.length)),
+      g.map(mk)); });
+}
 function renderBoard(m){
   const tasks=visible(); const grid=h('div',{class:'board'});
   for(const st of STATUSES){
@@ -1026,14 +1037,7 @@ function renderBoard(m){
     else list.sort(byDue);
     let body;
     if(!list.length) body=h('div',{class:'col-body'},h('div',{class:'empty'},emptyText(st.id)));
-    else if(S.lanes){
-      body=h('div',{class:'col-body grouped'});
-      const order=allBrands(); const keys=[...new Set(list.map(t=>t.brand||''))].sort((a,b)=>{const ia=a?order.indexOf(a):1e9, ib=b?order.indexOf(b):1e9; return ia-ib;});
-      for(const b of keys){ const g=list.filter(t=>(t.brand||'')===b); const c=b?brandColor(b):'#9A989F';
-        body.append(h('div',{class:'grp-b',style:`--lc:${c};--lt:${tint(c,.08)}`},
-          h('div',{class:'grp-h'},b?symEl(b):null,h('span',{class:'grp-name'},b||'Без бренда'),h('span',{class:'grp-n mono'},g.length)),
-          g.map(card))); }
-    } else body=h('div',{class:'col-body'},list.map(card));
+    else if(S.lanes){ body=h('div',{class:'col-body grouped'},...brandGroups(list,card)); } else body=h('div',{class:'col-body'},list.map(card));
     if(hidden) body.append(h('button',{class:'more',onclick:()=>{S.allDone=true;render();}},`Показать ещё ${hidden} — старше двух недель`));
     const col=h('section',{class:'col','data-st':st.id,'aria-label':st.name},
       h('div',{class:'col-h'},h('span',{class:'col-dot'}),h('span',{class:'col-name'},st.name),h('span',{class:'col-n mono'},list.length+hidden)),
@@ -1051,37 +1055,30 @@ function renderTeam(m){
   const q=S.q.trim().toLowerCase();
   const tasks=S.tasks.filter(t=>(!S.brand||t.brand===S.brand)&&(!S.who||t.createdBy===S.who)&&(!q||(t.title+' '+t.brand+' '+t.desc).toLowerCase().includes(q)));
   const people=designerIds();
-  const cols=[{id:null,name:'Новые',sub:'без исполнителя'},...people.map(id=>({id,name:nameOf(id)}))];
-  const wrap=h('div',{class:'team',style:'--n:'+people.length});
+  const cols=[{id:null,name:'Новые'},...people.map(id=>({id,name:nameOf(id)}))];
+  const wrap=h('div',{class:'board team',style:'--n:'+cols.length});
   const cut=Date.now()-7*DAY;
+  const mk=t=>{ const el=card(t); el.draggable=canReassignT(t)&&t.status!=='done'; return el; };
   for(const c of cols){
     const mine=tasks.filter(t=>c.id?t.assignee===c.id:!t.assignee);
     const open=mine.filter(t=>t.status!=='done');
-    const over=open.filter(isOver).length;
-    const hrs=open.reduce((a,t)=>a+(SIZE_H[t.size]||0),0);
-    const meta=h('span',{class:'tcol-meta'},
-      h('span',{},open.length+' '+plural(open.length,'открытая','открытых','открытых')),
-      c.id&&hrs?h('span',{},'≈ '+hrs+' ч'):null,
-      over?h('span',{class:'bad'},over+' просроч.'):null);
-    const head=c.id
-      ? h('button',{class:'tcol-h',title:'Открыть доску '+c.name,onclick:()=>{ S.dsg=c.id; S.fromTeam=true; S.view='board'; setHash('board'); render(); window.scrollTo(0,0); }},
-          h('span',{class:'ava'+(c.id===S.me?' me':'')},initials(c.name)), h('span',{class:'tcol-t'},h('span',{class:'tcol-name'},c.name),meta), h('span',{class:'tcol-go'},'Открыть →'))
-      : h('div',{class:'tcol-h'},h('span',{class:'ava none'},'?'),h('span',{class:'tcol-t'},h('span',{class:'tcol-name'},'Новые'),h('span',{class:'tcol-meta'},h('span',{},'без исполнителя · '+open.length))));
-    const body=h('div',{class:'tcol-body'});
+    const head=h('div',{class:'col-h'},
+      c.id?h('span',{class:'ava t-ava'+(c.id===S.me?' me':'')},initials(c.name)):h('span',{class:'col-dot'}),
+      h('span',{class:'col-name'},c.name),h('span',{class:'col-n mono'},open.length),
+      c.id?h('span',{class:'t-go'},'Открыть →'):null);
+    if(c.id){ head.classList.add('t-click'); head.title='Открыть доску: '+c.name; head.onclick=()=>{ S.dsg=c.id; S.fromTeam=true; S.view='board'; setHash('board'); render(); window.scrollTo(0,0); }; }
+    const body=h('div',{class:'col-body t-body'});
     const sts=c.id?STATUSES:STATUSES.filter(st=>st.id!=='done');
     for(const st of sts){
       let list=mine.filter(t=>t.status===st.id);
       if(st.id==='done'){ list.sort((a,b)=>(b.doneAt||b.statusAt)-(a.doneAt||a.statusAt)); list=list.filter(t=>(t.doneAt||t.statusAt)>=cut); }
       else list.sort(byDue);
       if(!list.length) continue;
-      const showAll=S.teamOpen&&S.teamOpen[c.id+st.id]; const lim=st.id==='done'&&!showAll?3:1e9;
-      const sec=h('div',{class:'tsec','data-st':st.id},h('div',{class:'tsec-h'},h('span',{class:'col-dot'}),st.id==='done'?'Готово за неделю':st.name,h('span',{class:'n mono'},list.length)),
-        list.slice(0,lim).map(t=>{ const el=card(t); el.draggable=canReassignT(t)&&t.status!=='done'; return el; }));
-      if(list.length>lim) sec.append(h('button',{class:'tsec-more',onclick:()=>{ (S.teamOpen||(S.teamOpen={}))[c.id+st.id]=true; render(); }},'ещё '+(list.length-lim)));
-      body.append(sec);
+      if(c.id) body.append(h('div',{class:'t-st','data-st':st.id},h('span',{class:'col-dot'}),st.id==='done'?'Готово за неделю':st.name,h('span',{class:'mono'},list.length)));
+      body.append(h('div',{class:'col-body grouped'},...brandGroups(list,mk)));
     }
-    if(!body.children.length) body.append(h('div',{class:'empty'},c.id?'Задач нет — можно перетащить сюда':'Все задачи разобраны'));
-    const col=h('section',{class:'tcol','aria-label':c.name},head,body);
+    if(!body.children.length) body.append(h('div',{class:'empty'},c.id?'Задач нет':'Новых задач нет'));
+    const col=h('section',{class:'col t-col','aria-label':c.name},head,body);
     col.addEventListener('dragover',e=>{ e.preventDefault(); col.classList.add('over'); });
     col.addEventListener('dragleave',e=>{ if(!col.contains(e.relatedTarget)) col.classList.remove('over'); });
     col.addEventListener('drop',async e=>{ e.preventDefault(); col.classList.remove('over');
@@ -1220,6 +1217,7 @@ async function moveTask(t,to,comment,kind){
     await store.update(t.id,patch);
     await store.log(t.id,{kind:'event',text:`${ST_NAME[t.status]} → ${ST_NAME[to]}`,by:S.me,at:now});
     if(comment) await store.log(t.id,{kind:kind==='return'?'return':'comment',text:comment,by:S.me,at:now+1});
+    if(to==='work'&&!t.size&&S.mode==='server'&&canExecT(t)&&D.id!==t.id) openTask(t.id);
   }catch(e){ toast(errText(e)); }
 }
 
@@ -1540,9 +1538,10 @@ function renderHead(t){
     byEl=h('span',{class:'by-row'},'Поставил(а): ',pf.el);
   } else byEl=h('span',{},'Поставил(а): ',h('b',{},nameOf(t.createdBy)));
   const canSize=S.canWrite&&canExecT(t)&&t.status!=='done';
-  const sizePill=(t.size||canSize)?h('button',{type:'button',class:'pill',disabled:!canSize,title:canSize?'Изменить размер':null,onclick:e=>{ const anchor=e.currentTarget; openPop(anchor,h('div',{class:'size-pop'},h('div',{class:'dp-k',style:'margin-bottom:6px'},'Размер задачи'),sizePicker(t.size,k=>{ closePop(); if(k!==t.size) patchTask(t,{size:k},`Размер: ${t.size?sizeLabel(t.size):'—'} → ${sizeLabel(k)}`); }))); }},
-    h('span',{class:'pill-k'},'Размер'),h('span',{class:'mono'},t.size?sizeLabel(t.size):'не оценён'),canSize?h('span',{class:'caret'},'▾'):null):null;
-  const parts=[title,h('div',{class:'t-by'},byEl,asgEl),h('div',{class:'pills'},brandPill,duePill,prioPill,sizePill)];
+  const sizePill=(t.size&&!canSize)?h('span',{class:'pill',style:'cursor:default'},h('span',{class:'pill-k'},'Размер'),h('span',{class:'mono'},sizeLabel(t.size))):null;
+  const sizeRow=(canSize&&t.status!=='new'&&t.size)?h('div',{class:'size-row'},h('span',{class:'pill-k'},'Размер'),
+    h('div',{class:'size-seg',role:'group','aria-label':'Размер задачи'},SIZES.map(([k,hh])=>h('button',{type:'button','aria-pressed':String(t.size===k),title:sizeLabel(k),onclick:()=>{ if(k!==t.size) patchTask(t,{size:k},`Размер: ${t.size?sizeLabel(t.size):'—'} → ${sizeLabel(k)}`); }},h('b',{},k),' ',hh+' ч')))):null;
+  const parts=[title,h('div',{class:'t-by'},byEl,asgEl),h('div',{class:'pills'},brandPill,duePill,prioPill,sizePill),sizeRow].filter(Boolean);
   if(isHeadUser()&&S.mode==='server'){
     const x=tStats(t);
     parts.push(h('div',{class:'t-stats'},
@@ -1678,6 +1677,11 @@ function renderActions(t){
   const btns=[];
   if(canTake) btns.push(h('button',{class:'btn primary',onclick:()=>askSize(async k=>{ await store.update(t.id,{assignee:S.me,size:k}); await store.log(t.id,{kind:'event',text:'Взял(а) задачу себе · размер '+sizeLabel(k),by:S.me,at:Date.now()}); if(t.status==='new') await moveTask({...t,assignee:S.me},'work'); })},t.status==='new'?'Взять себе в работу':'Взять себе'));
   else if(t.status==='new'&&exec&&(t.assignee||S.mode!=='server')) btns.push(h('button',{class:'btn primary',onclick:()=>askSize(async k=>{ await store.update(t.id,{size:k}); await store.log(t.id,{kind:'event',text:'Размер: '+sizeLabel(k),by:S.me,at:Date.now()}); await moveTask({...t},'work'); })},'Взять в работу'));
+  if(t.status==='work'&&exec&&(t.assignee||S.mode!=='server')&&!t.size&&S.mode==='server'){
+    A.replaceChildren(h('div',{class:'ask on size-need'},h('label',{class:'res-k'},'Оцени размер работы — без этого задачу не сдать'),
+      sizePicker('',async k=>{ try{ await store.update(t.id,{size:k}); await store.log(t.id,{kind:'event',text:'Размер: '+sizeLabel(k),by:S.me,at:Date.now()}); }catch(e){ toast(errText(e)); } refreshDrawer(); })));
+    return;
+  }
   if(t.status==='work'&&exec&&(t.assignee||S.mode!=='server')) btns.push(h('button',{class:'btn primary',onclick:()=>askReview(t)},'Сдать на проверку'));
   if(t.status==='review'&&req){
     btns.push(h('button',{class:'btn ok',onclick:()=>moveTask(t,'done')},'✓ Принять'));
@@ -1689,7 +1693,7 @@ function renderActions(t){
 }
 
 /* ============ wiring ============ */
-for(const b of $('#tabs').children) b.onclick=()=>{ S.view=b.dataset.v; if(S.view==='team'&&S.fromTeam){ S.dsg=null; S.fromTeam=false; } try{history.replaceState(null,'','#'+S.view);}catch(e){location.hash=S.view;} render(); };
+for(const b of $('#tabs').children) b.onclick=()=>{ S.view=b.dataset.v; if(S.fromTeam){ S.dsg=null; S.fromTeam=false; } try{history.replaceState(null,'','#'+S.view);}catch(e){location.hash=S.view;} render(); };
 function taskHashFull(id){ return 't-'+String(id).replace(/[^A-Za-z0-9-]/g,c=>'-'+c.charCodeAt(0).toString(36)+'-'); }
 function taskHash(id){ return S.mode==='server'?taskHashFull(id):taskHashFull(id).slice(0,8); }
 function findByHash(v){ return S.tasks.find(x=>taskHashFull(x.id)===v)||S.tasks.find(x=>taskHash(x.id)===v); }
