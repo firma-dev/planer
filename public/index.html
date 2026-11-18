@@ -413,7 +413,7 @@ textarea.t-title:focus{background:var(--card);box-shadow:0 0 0 1.5px var(--ink)}
 .login-err{color:var(--bad);font-size:13px;min-height:0}
 .login-err:empty{display:none}
 .login-small{margin:4px 0 0;font-size:12px;color:var(--ink3)}
-@media (max-width:640px){ .me-box{display:none} }
+
 
 .people-btn{padding:4px 10px;font-size:12.5px}
 .people-add{display:flex;gap:8px;margin-bottom:16px}
@@ -491,6 +491,43 @@ textarea.t-title:focus{background:var(--card);box-shadow:0 0 0 1.5px var(--ink)}
 .popover{max-height:calc(100vh - 20px);overflow:auto}
 .dp-d{height:30px}
 .dp{gap:8px}
+
+.bar-right{justify-self:end;display:flex;align-items:center;gap:14px}
+.bar-right .stats-box{justify-self:auto}
+.me-box{padding-top:0;gap:10px}
+.me-id{display:flex;align-items:center;gap:8px}
+.me-id .ava{margin:0;width:30px;height:30px;font-size:11px}
+.me-txt{display:flex;flex-direction:column;line-height:1.15}
+.me-txt .me-name{font-size:12.5px;font-weight:800}
+.me-role{align-self:flex-start;font-size:9.5px;padding:1px 5px;margin-top:2px}
+.me-role.r-admin{background:#E6ECFF;color:#1F5BFF}
+.me-role.r-designer{background:#E8F6EE;color:#1F8A57}
+.me-role.r-manager{background:#FFF1E8;color:#C2410C}
+.me-role.r-head{background:#F3E8FF;color:#7B3FC4}
+.icon-btn{width:34px;height:34px;display:grid;place-items:center;border:1px solid var(--line2);background:var(--card);border-radius:10px;color:var(--ink2)}
+.icon-btn:hover{border-color:var(--ink);color:var(--ink)}
+@media (max-width:1100px){ .me-txt{display:none} }
+@media (max-width:640px){ .me-box{display:flex} .people-btn{display:none} .bar-right{gap:6px} }
+
+.stat .ss{display:none}
+.stats{gap:6px}
+.stat{padding:5px 10px}
+@media (max-width:1300px){ .stat .sl{display:none} .stat .ss{display:inline} }
+@media (max-width:760px){ .stat .ss{display:none} .stat{padding:5px 8px} .bar-right{gap:6px} .me-id .ava{width:28px;height:28px} .icon-btn{width:30px;height:30px} }
+
+.msg-row{display:flex;align-items:flex-end;gap:8px}
+.msg-reply{opacity:0;border:0;background:transparent;font-size:12px;font-weight:700;color:var(--ink3);padding:4px 2px;white-space:nowrap;transition:opacity .12s}
+.msg:hover .msg-reply,.msg-reply:focus{opacity:1}
+.msg-reply:hover{color:var(--ink)}
+@media (hover:none){ .msg-reply{opacity:1} }
+.quote{display:block;width:100%;text-align:left;border:0;border-left:3px solid var(--line2);background:#F4F2EE;border-radius:6px;padding:4px 8px;margin:0 0 6px;font-size:12px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:420px}
+.quote b{color:var(--ink)}
+.msg.flash .txt{box-shadow:0 0 0 2px var(--soon)}
+.reply-chip{display:flex;align-items:center;gap:4px;font-size:12.5px;background:#F4F6FF;border:1px solid #CDD8FF;border-radius:10px;padding:6px 8px 6px 12px;color:var(--ink2)}
+.reply-chip[hidden]{display:none}
+.rc-t{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rc-x{border:0;background:transparent;color:var(--ink3);font-size:13px;padding:2px 6px}
+.rc-x:hover{color:var(--ink)}
 </style>
 </head>
 <body>
@@ -502,12 +539,12 @@ textarea.t-title:focus{background:var(--card);box-shadow:0 0 0 1.5px var(--ink)}
       <button data-v="list">Список</button>
       <button data-v="load">Загрузка</button>
     </nav>
-    <div id="statsBox" class="stats-box"></div>
+    <div class="bar-right"><div id="statsBox" class="stats-box"></div><div class="me-box" id="meBox"></div></div>
     <input class="search" id="q" type="search" placeholder="Поиск по задачам" aria-label="Поиск">
     <button class="btn primary" id="newBtn">+ Поставить задачу</button>
   </div>
 </header>
-<div class="brands"><div class="sub" id="sub"></div><div class="me-box" id="meBox"></div></div>
+<div class="brands"><div class="sub" id="sub"></div></div>
 <div id="notes"></div>
 <main id="main"><div class="loading">Загружаю доску…</div></main>
 
@@ -596,7 +633,7 @@ class ServerStore{
   }
   async load(){
     const st=await this.api('GET','/state');
-    S.me=st.me.id; S.isOwner=st.role==='designer'; S.myName=st.me.name;
+    S.me=st.me.id; S.isOwner=st.admin!=null?!!st.admin:st.role==='designer'; S.role=st.admin?'admin':(st.role==='member'?'manager':st.role); S.myName=st.me.name;
     for(const u of st.users) names[u.id]=u.name;
     this.tasks=new Map(st.tasks.map(t=>[t.id,t])); this.config=st.config;
     this.emit(); this.emitCfg();
@@ -633,7 +670,7 @@ class ServerStore{
   async create(data){ const t=await this.api('POST','/tasks',data); this.tasks.set(t.id,t); this.emit(); return t.id; }
   async update(id,patch){ const p=Object.assign({},patch); delete p.updatedAt; delete p.statusAt; delete p.doneAt; const t=await this.api('PATCH','/tasks/'+id,p); this.tasks.set(t.id,t); this.emit(); }
   async remove(id){ await this.api('DELETE','/tasks/'+id); this.tasks.delete(id); this.emit(); }
-  async log(id,entry){ if(entry.kind==='event'&&/^Поставил/.test(entry.text||'')) return; const e=await this.api('POST','/tasks/'+id+'/log',{kind:entry.kind,text:entry.text}); const arr=this.logs.get(id); if(arr&&!arr.some(x=>x.id===e.id)){ arr.push(e); this.emitLog(id); } }
+  async log(id,entry){ if(entry.kind==='event'&&/^Поставил/.test(entry.text||'')) return; const e=await this.api('POST','/tasks/'+id+'/log',{kind:entry.kind,text:entry.text,replyTo:entry.replyTo}); const arr=this.logs.get(id); if(arr&&!arr.some(x=>x.id===e.id)){ arr.push(e); this.emitLog(id); } }
 }
 class DbStore{
   constructor(db){ this.db=db; this.q=new Map(); }
@@ -703,10 +740,18 @@ async function boot(){
     render(); if(D.id) refreshDrawer();
   });
 }
+const ROLE_LABEL={admin:'админ',designer:'дизайнер',manager:'бренд-менеджер',head:'руководитель'};
 function renderMe(){
   const box=$('#meBox'); if(!box) return;
-  box.replaceChildren(...[S.isOwner&&S.mode==='server'?h('button',{class:'chip plain people-btn',onclick:openPeople},'Люди'):null,h('span',{class:'me-name'},S.myName||''),S.isOwner?h('span',{class:'me-role'},'дизайнер'):null,h('button',{class:'linkbtn',onclick:()=>logout(false)},'Выйти')].filter(Boolean));
+  const role=S.isOwner?'admin':(S.role||'manager');
+  const out=h('button',{class:'icon-btn',title:'Выйти','aria-label':'Выйти',onclick:()=>logout(false)},
+    (()=>{ const sv=document.createElementNS('http://www.w3.org/2000/svg','svg'); sv.setAttribute('viewBox','0 0 24 24'); sv.setAttribute('width','18'); sv.setAttribute('height','18'); sv.setAttribute('fill','none'); sv.setAttribute('stroke','currentColor'); sv.setAttribute('stroke-width','2'); sv.setAttribute('stroke-linecap','round'); sv.setAttribute('stroke-linejoin','round'); sv.innerHTML='<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l-5-5 5-5"/><path d="M5 12h11"/>'; return sv; })());
+  box.replaceChildren(...[
+    S.isOwner&&S.mode==='server'?h('button',{class:'chip plain people-btn',onclick:openPeople},'Люди'):null,
+    h('div',{class:'me-id'},h('span',{class:'ava me'},initials(S.myName||'')),h('div',{class:'me-txt'},h('span',{class:'me-name'},S.myName||''),h('span',{class:'me-role r-'+role},ROLE_LABEL[role]||role))),
+    out].filter(Boolean));
 }
+
 function logout(expired){
   try{ if(!expired&&store&&store.api) fetch('/api/logout',{method:'POST',headers:{'Authorization':'Bearer '+store.token}}); }catch(e){}
   try{ localStorage.removeItem('planer-token'); }catch(e){}
@@ -726,7 +771,7 @@ async function joinByInvite(key){
 async function showLogin(msg){
   let info={openLogin:false,teamCodeRequired:false}; try{ info=await (await fetch('/api/info')).json(); }catch(e){}
   const nameIn=h('input',{type:'text',placeholder:'Имя Фамилия',autocomplete:'name',maxlength:'80','aria-label':'Имя и фамилия'});
-  const codeIn=h('input',{type:'password',placeholder:info.openLogin?(info.teamCodeRequired?'Код команды':'Код (если есть)'):'Код дизайнера',autocomplete:'off',maxlength:'100','aria-label':'Код'});
+  const codeIn=h('input',{type:'password',placeholder:info.openLogin?(info.teamCodeRequired?'Код команды':'Код (если есть)'):'Код администратора',autocomplete:'off',maxlength:'100','aria-label':'Код'});
   const err=h('div',{class:'login-err'},msg||'');
   const go=h('button',{class:'btn primary',type:'submit'},'Войти');
   const fields=h('div',{class:'login-fields'},nameIn,codeIn,go);
@@ -746,12 +791,12 @@ async function showLogin(msg){
     h('div',{class:'login-logo'},document.querySelector('.logo-mark').cloneNode(true),h('span',{},'Планер')),
     info.openLogin
       ? h('p',{class:'login-hint'},'Представьтесь — так вас увидят в задачах и комментариях.')
-      : h('p',{class:'login-hint'},'Чтобы войти, откройте личную ссылку, которую прислал дизайнер.'),
+      : h('p',{class:'login-hint'},'Чтобы войти, откройте личную ссылку от администратора.'),
     err);
   if(info.openLogin){ form.append(fields); }
   else {
     fields.style.display='none';
-    const toggle=h('button',{type:'button',class:'linkbtn',onclick:()=>{ fields.style.display=''; toggle.remove(); nameIn.focus(); }},'Я дизайнер — войти по коду');
+    const toggle=h('button',{type:'button',class:'linkbtn',onclick:()=>{ fields.style.display=''; toggle.remove(); nameIn.focus(); }},'Я администратор — войти по коду');
     form.append(toggle,fields);
   }
   document.body.append(h('div',{class:'login'},form));
@@ -791,8 +836,8 @@ function renderSub(){
   const today=open.filter(t=>dueTs(t)!=null&&sod(dueTs(t))===sod(Date.now())).length;
   const review=S.tasks.filter(t=>t.status==='review').length;
   const fireN=open.filter(t=>t.priority==='fire').length;
-  const st=(n,label,cls)=>h('div',{class:'stat'+(n?cls:''),title:label},h('b',{},n),h('span',{},label));
-  $('#statsBox').replaceChildren(h('div',{class:'stats'},st(fireN,'горит',' hot'),st(over,'просрочено',' bad'),st(today,'на сегодня',' warn')));
+  const st=(n,label,short,cls)=>h('div',{class:'stat'+(n?cls:''),title:label},h('b',{},n),h('span',{class:'sl'},label),h('span',{class:'ss'},short));
+  $('#statsBox').replaceChildren(h('div',{class:'stats'},st(fireN,'горит','гор.',' hot'),st(over,'просрочено','проср.',' bad'),st(today,'на сегодня','сег.',' warn')));
 }
 function renderNotes(){
   const n=$('#notes'); n.replaceChildren();
@@ -1156,7 +1201,7 @@ async function openPeople(){
       const reset=!isMe?h('button',{class:'linkbtn',onclick:async()=>{ try{ await store.api('POST','/people/'+p.id+'/reset'); await load(); toast('Новая ссылка готова — старая больше не работает'); }catch(err){ toast(errText(err)); } }},p.disabled?'Включить':'Новая ссылка'):null;
       const cnt=S.tasks.filter(t=>t.createdBy===p.id&&t.status!=='done').length;
       return h('div',{class:'person'+(p.disabled?' off':'')},
-        h('div',{class:'person-main'},h('span',{class:'ava'+(isMe?' me':'')},initials(p.name)),h('div',{},h('div',{class:'person-name'},p.name+(isMe?' (я)':'')),h('div',{class:'person-sub'},isMe?'дизайнер':p.disabled?'отключён(а)':(p.lastSeen?'заходил(а) '+fmtWhen(p.lastSeen):'ещё не заходил(а)')+(cnt?` · открытых задач: ${cnt}`:'')))),
+        h('div',{class:'person-main'},h('span',{class:'ava'+(isMe?' me':'')},initials(p.name)),h('div',{},h('div',{class:'person-name'},p.name+(isMe?' (я)':'')),h('div',{class:'person-sub'},isMe?'администратор':p.disabled?'отключён(а)':(p.lastSeen?'заходил(а) '+fmtWhen(p.lastSeen):'ещё не заходил(а)')+(cnt?` · открытых задач: ${cnt}`:'')))),
         isMe?null:h('div',{class:'person-act'},copy,reset,off));
     }));
   }
@@ -1179,11 +1224,13 @@ function openTask(id){
   Object.assign(D,{mode:'view',id,logs:[],lastStatus:null,dueOpen:false,brandOpen:false,histOpen:false,tzOpen:null,askOpen:false});
   D.stepEl=h('div'); D.headEl=h('div',{class:'t-head'}); D.tzEl=h('div'); D.logEl=h('div',{class:'log'}); D.histEl=h('div',{class:'hist-wrap'});
   $('#dBody').replaceChildren(D.stepEl,D.headEl,D.tzEl,h('div',{class:'sec-t'},'Обсуждение'),D.logEl,D.histEl);
-  const ta=h('textarea',{rows:'1',placeholder:S.canWrite?'Комментарий или ссылка…':'Только просмотр',disabled:!S.canWrite,maxlength:'3000',oninput:e=>autosize(e.target)});
-  const send=async()=>{ const txt=ta.value.trim(); if(!txt) return; ta.value=''; autosize(ta); try{ await store.log(id,{kind:'comment',text:txt,by:S.me,at:Date.now()}); await store.update(id,{updatedAt:Date.now()}); setTimeout(()=>{ const b=$('#dBody'); b.scrollTop=b.scrollHeight; },120); }catch(e){ ta.value=txt; toast(errText(e)); } };
-  ta.addEventListener('keydown',e=>{ if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){ e.preventDefault(); send(); } });
+  const ta=h('textarea',{rows:'1',placeholder:S.canWrite?'Комментарий или ссылка… (Enter — отправить)':'Только просмотр',disabled:!S.canWrite,maxlength:'3000',oninput:e=>autosize(e.target)});
+  D.replyTo=null; D.composeTa=ta;
+  D.replyEl=h('div',{class:'reply-chip',hidden:true});
+  const send=async()=>{ const txt=ta.value.trim(); if(!txt) return; const rt=D.replyTo; ta.value=''; autosize(ta); setReply(null); try{ await store.log(id,{kind:'comment',text:txt,replyTo:rt||undefined,by:S.me,at:Date.now()}); if(S.mode!=='server') await store.update(id,{updatedAt:Date.now()}); setTimeout(()=>{ const b=$('#dBody'); b.scrollTop=b.scrollHeight; },120); }catch(e){ ta.value=txt; setReply(rt); toast(errText(e)); } };
+  ta.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){ e.preventDefault(); send(); } else if(e.key==='Escape'&&D.replyTo){ e.stopPropagation(); setReply(null); } });
   D.actEl=h('div',{class:'act-row'});
-  const foot=[]; if(S.canWrite) foot.push(h('div',{class:'compose'},ta,h('button',{class:'btn',onclick:send,'aria-label':'Отправить комментарий'},'Отправить')));
+  const foot=[]; if(S.canWrite) foot.push(D.replyEl,h('div',{class:'compose'},ta,h('button',{class:'btn',onclick:send,'aria-label':'Отправить комментарий'},'Отправить')));
   foot.push(D.actEl);
   const A=$('#dActions'); A.classList.add('stack'); A.replaceChildren(...foot);
   refreshDrawer();
@@ -1281,6 +1328,14 @@ function renderTz(t){
   D.tzEl.replaceChildren(det);
 }
 function linkify(text){ const out=[]; const re=/https?:\/\/[^\s<>"']+/gi; let last=0,m; while((m=re.exec(text))){ if(m.index>last) out.push(text.slice(last,m.index)); out.push(h('a',{class:'linkout',href:m[0],target:'_blank',rel:'noopener'},m[0])); last=m.index+m[0].length; } if(last<text.length) out.push(text.slice(last)); return out; }
+function setReply(lid){
+  D.replyTo=lid||null; const el=D.replyEl; if(!el) return;
+  const l=lid&&D.logs.find(x=>x.id===lid);
+  if(!l){ el.hidden=true; el.replaceChildren(); return; }
+  el.hidden=false;
+  el.replaceChildren(h('span',{class:'rc-k'},'Ответ: '),h('b',{},nameOf(l.by)),h('span',{class:'rc-t'},' — '+str(l.text).replace(/\s+/g,' ').slice(0,60)),h('button',{class:'rc-x','aria-label':'Отменить ответ',onclick:()=>setReply(null)},'✕'));
+  if(D.composeTa) D.composeTa.focus();
+}
 function renderLog(){
   if(!D.logEl) return;
   const comments=[], events=[];
@@ -1296,9 +1351,12 @@ function renderLog(){
   let prev=null;
   for(const l of comments){
     const cont=prev&&prev.by===l.by&&(+l.at-+prev.at)<10*60e3&&prev.kind===l.kind;
-    D.logEl.append(h('div',{class:'msg'+(l.kind==='return'?' ret':'')+(cont?' cont':'')},
-      cont?null:h('div',{class:'msg-h'},h('span',{class:'who'},nameOf(l.by)),h('span',{class:'when'},fmtWhen(+l.at)),l.kind==='return'?h('span',{class:'tag-ret'},'правки'):null),
-      h('div',{class:'txt'},linkify(l.text))));
+    const orig=l.replyTo&&D.logs.find(x=>x.id===l.replyTo);
+    const quote=orig?h('button',{class:'quote',onclick:()=>{ const el=D.logEl.querySelector('[data-lid="'+orig.id+'"]'); if(el){ el.scrollIntoView({behavior:'smooth',block:'center'}); el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'),1200); } }},h('b',{},nameOf(orig.by)),' '+str(orig.text).replace(/\s+/g,' ').slice(0,80)):null;
+    const replyBtn=S.canWrite&&l.id&&l.kind!=='event'?h('button',{class:'msg-reply',onclick:()=>setReply(l.id)},'Ответить'):null;
+    D.logEl.append(h('div',{class:'msg'+(l.kind==='return'?' ret':'')+(cont&&!orig?' cont':''),'data-lid':l.id},
+      (cont&&!orig)?null:h('div',{class:'msg-h'},h('span',{class:'who'},nameOf(l.by)),h('span',{class:'when'},fmtWhen(+l.at)),l.kind==='return'?h('span',{class:'tag-ret'},'правки'):null),
+      h('div',{class:'msg-row'},h('div',{class:'txt'},quote,linkify(l.text)),replyBtn)));
     prev=l;
   }
   if(!D.histEl) return;

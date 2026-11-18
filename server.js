@@ -114,7 +114,7 @@ async function api(req, res, url) {
     const b = await readBody(req);
     const key = str(b.key, 80);
     const u = key && Object.values(db.users).find(x => x.inviteKey && !x.disabled && safeEq(x.inviteKey, key));
-    if (!u) return send(res, 403, { error: 'Ссылка недействительна — попросите у дизайнера новую' });
+    if (!u) return send(res, 403, { error: 'Ссылка недействительна — попросите у администратора новую' });
     const token = id(32);
     db.sessions[token] = { userId: u.id, role: 'member', teamCode: TEAM_CODE, viaInvite: true, createdAt: Date.now() };
     u.lastSeen = Date.now();
@@ -129,7 +129,7 @@ async function api(req, res, url) {
     if (name.split(' ').filter(Boolean).length < 2) return send(res, 400, { error: 'Введите имя и фамилию' });
     let role = 'member';
     if (code && safeEq(code, DESIGNER_CODE)) role = 'designer';
-    else if (!OPEN_LOGIN) return send(res, 403, { error: code ? 'Неверный код' : 'Вход только по личной ссылке — попросите её у дизайнера' });
+    else if (!OPEN_LOGIN) return send(res, 403, { error: code ? 'Неверный код' : 'Вход только по личной ссылке — попросите её у администратора' });
     else if (TEAM_CODE && !safeEq(code, TEAM_CODE)) return send(res, 403, { error: 'Неверный код команды' });
     let u = Object.values(db.users).find(x => normName(x.name) === normName(name));
     if (!u) { u = { id: 'u' + id(9), name, createdAt: Date.now() }; db.users[u.id] = u; broadcast({ type: 'user', user: publicUser(u) }); }
@@ -259,7 +259,9 @@ async function api(req, res, url) {
       const kind = ['comment', 'event', 'return'].includes(b.kind) ? b.kind : 'comment';
       const text = str(b.text, 3000);
       if (!text) return send(res, 400, { error: 'Пустой комментарий' });
-      const e = addLog(t.id, { kind, text, by: a.user.id, at: Date.now() });
+      const entry = { kind, text, by: a.user.id, at: Date.now() };
+      if (typeof b.replyTo === 'string' && (db.logs[t.id] || []).some(x => x.id === b.replyTo)) entry.replyTo = b.replyTo;
+      const e = addLog(t.id, entry);
       save();
       return send(res, 201, e);
     }
