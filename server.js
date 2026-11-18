@@ -96,7 +96,7 @@ function migrate() {
   if (changed) save();
 }
 
-const publicConfig = () => ({ brands: db.config.brands, brandColors: db.config.brandColors });
+const publicConfig = () => ({ brands: db.config.brands, brandColors: db.config.brandColors, busy: db.config.busy || {} });
 
 // ---------- admin code ----------
 // Если код сменили через интерфейс, он хранится в базе как хэш и важнее DESIGNER_CODE из .env
@@ -252,6 +252,20 @@ async function api(req, res, url) {
     return send(res, 200, { id: u.id, name: u.name, inviteKey: u.inviteKey, disabled: !!u.disabled });
   }
 
+  if (p === '/api/busy' && m === 'POST') {
+    const b = await readBody(req);
+    const uid = typeof b.user === 'string' ? b.user : a.user.id;
+    if (uid !== a.user.id && !isHead(a)) return send(res, 403, { error: 'Отмечать можно только себя' });
+    if (!db.users[uid]) return send(res, 404, { error: 'Нет такого человека' });
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(b.date || ''))) return send(res, 400, { error: 'Плохая дата' });
+    const busy = db.config.busy = db.config.busy || {};
+    const set = new Set(busy[uid] || []);
+    if (b.on) set.add(b.date); else set.delete(b.date);
+    const cut = new Date(Date.now() - 60 * 864e5).toISOString().slice(0, 10);
+    busy[uid] = [...set].filter(d => d >= cut).sort();
+    save(); broadcast({ type: 'config', config: publicConfig() });
+    return send(res, 200, publicConfig());
+  }
   if (p === '/api/config' && m === 'PATCH') {
     if (!isDesigner(a)) return send(res, 403, { error: 'Только администратор' });
     const b = await readBody(req);

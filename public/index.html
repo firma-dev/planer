@@ -613,6 +613,59 @@ textarea.t-title:focus{background:var(--card);box-shadow:0 0 0 1.5px var(--ink)}
 .sheet .size-pick{margin-bottom:12px}
 .size-row.need{border:1.5px solid var(--warn);background:#FFF8EC;border-radius:12px;padding:10px}
 .sheet-q{font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:8px}
+
+/* ===== загрузка ===== */
+.p-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.sig-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:10px}
+@media (max-width:900px){.sig-row{grid-template-columns:1fr 1fr}}
+.sig{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;border:1px solid var(--line2);background:var(--card);border-radius:12px;padding:12px 14px;font:inherit;color:inherit}
+.sig:hover{border-color:var(--ink3)}
+.sig[aria-pressed="true"]{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
+.sig-n{font:800 26px/1 "JetBrains Mono",monospace}
+.sig.bad .sig-n{color:var(--bad)}.sig.warn .sig-n{color:var(--warn)}
+.sig-t{font-weight:800;font-size:13.5px;margin-top:4px}
+.sig-d{font-size:12px;color:var(--ink3)}
+.sig-list{margin-top:10px;border-top:1px solid var(--line);display:flex;flex-direction:column}
+.sig-it{display:flex;align-items:center;gap:10px;padding:9px 4px;border:0;border-bottom:1px solid var(--line);background:none;font:inherit;color:inherit;text-align:left;width:100%}
+button.sig-it:hover{background:#F6F4F0}
+.sig-tt{flex:1;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sig-m{font-size:12.5px;color:var(--ink3);white-space:nowrap}
+.bad-t{color:var(--bad)!important}
+.all-ok{margin-top:8px;padding:14px;border-radius:12px;background:#E9F5EE;color:var(--ok);font-weight:700}
+.wk-scroll{overflow-x:auto;margin-top:12px}
+.wk{display:grid;grid-template-columns:170px repeat(var(--cols),minmax(110px,1fr));gap:6px;min-width:980px}
+.wk-h{font-size:11.5px;color:var(--ink3);padding:0 4px 2px;white-space:nowrap}
+.wk-h b{color:var(--ink);font-weight:800}
+.wk-h.today b{color:var(--soon)}
+.wk-name{display:flex;gap:8px;align-items:flex-start;padding:8px 4px}
+.wk-nm{font-weight:800;font-size:13px}
+.wk-sum{font-size:11.5px;color:var(--ink3);margin-top:2px}
+.wk-c{background:#F4F2EE;border-radius:10px;padding:7px;display:flex;flex-direction:column;gap:4px;min-height:64px;outline:2px dashed transparent;outline-offset:-2px}
+.wk-c.drop{outline-color:var(--ink3);background:#ECE9E2}
+.wk-c.busy{background:repeating-linear-gradient(135deg,#EFECE6 0 6px,#E6E2DA 6px 12px)}
+.wk-c.late{background:var(--bad-bg)}
+.wk-top{display:flex;align-items:center;justify-content:space-between;gap:4px}
+.wk-h2{font:600 11.5px "JetBrains Mono",monospace;color:var(--ink2)}
+.wk-c.over .wk-h2{color:var(--bad)}
+.wk-busy{border:0;background:none;font-size:11px;color:var(--ink3);padding:0 2px;opacity:0;transition:opacity .12s}
+.wk-c:hover .wk-busy,.wk-c.busy .wk-busy{opacity:1}
+.wk-busy:hover{color:var(--ink);text-decoration:underline}
+.wk-bar{height:4px;border-radius:2px;background:#E2DED6;overflow:hidden;margin-bottom:2px}
+.wk-bar i{display:block;height:100%;background:var(--ok);border-radius:2px}
+.wk-c.over .wk-bar i{background:var(--bad)}
+.wk-t{display:flex;align-items:center;gap:6px;border:0;border-left:3px solid var(--bc,var(--line2));background:var(--card);border-radius:6px;padding:5px 7px;font:inherit;font-size:12px;text-align:left;box-shadow:0 1px 2px rgba(0,0,0,.06);width:100%;color:inherit}
+.wk-t:hover{box-shadow:0 2px 8px -2px rgba(0,0,0,.2)}
+.wk-t.dragging{opacity:.4}
+.wk-tt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.wk-th{font-size:11px;color:var(--ink3)}
+.q-bar{display:flex;height:12px;border-radius:6px;overflow:hidden;background:#EEE;margin-top:6px}
+.q-bar i{display:block;height:100%}
+.qd{background:var(--soon)}.qb{background:var(--warn)}
+.q-leg{display:flex;gap:18px;flex-wrap:wrap;margin-top:8px;font-size:13px}
+.q-leg i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px}
+.seg.mini{display:inline-flex;background:#EBE8E1;border-radius:9px;padding:3px}
+.seg.mini button{border:0;background:none;border-radius:7px;padding:4px 10px;font:inherit;font-size:12.5px;font-weight:600;color:var(--ink2)}
+.seg.mini button[aria-pressed="true"]{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.1)}
 /* ===== команда ===== */
 @media (min-width:1200px){ .brands .sub{gap:6px;padding-left:0;padding-right:0} .brands .sub .chip{padding-right:9px;font-size:12.5px} .brands .sub .chip.plain{padding:4px 9px} }
 
@@ -1187,7 +1240,122 @@ function barChart(items,{norm,label}){
   const xl=h('div',{class:'xl','aria-hidden':'true'},items.map(i=>h('span',{class:(i.we?'we ':'')+(i.today?'today':'')},i.label)));
   return h('div',{},chart,xl);
 }
+
+/* ============ Загрузка (руководитель) ============ */
+const ymdT=ts=>ymd(new Date(ts));
+function workDays(n){ const out=[]; let d=sod(Date.now()); while(out.length<n){ const w=new Date(d).getDay(); if(w!==0&&w!==6) out.push(d); d+=DAY; } return out; }
+function busyOn(uid,day){ const b=S.config&&S.config.busy&&S.config.busy[uid]; return !!(b&&b.includes(ymdT(day))); }
+function normH(){ try{ const n=Number(localStorage.getItem('planer-norm-h')); if(n>0) return n; }catch(e){} return 6; }
+async function toggleBusy(uid,day,on){
+  try{ const c=await store.api('POST','/busy',{user:uid,date:ymdT(day),on}); store.config=Object.assign({},store.config,c); store.emitCfg(); }catch(e){ toast(errText(e)); }
+}
 function renderLoad(m){
+  if(S.mode!=='server') return renderLoadOld(m);
+  const tasks=visible(); const now=Date.now(); const today=sod(now); const N=normH();
+  const people=designerIds().filter(id=>!S.dsg||S.dsg===id);
+  const days=workDays(5); const lastDay=days[days.length-1];
+  const loadT=tasks.filter(t=>t.status==='new'||t.status==='work');
+  const colOf=t=>{ const d=dueTs(t); if(d==null) return 'later'; if(d<now&&sod(d)<today) return 'over'; const sd=sod(d); if(sd<=today) return days[0]===today?today:'over'; if(sd>lastDay) return 'later'; return days.includes(sd)?sd:days.find(x=>x>=sd)||'later'; };
+  const hrs=list=>list.reduce((a,t)=>a+(SIZE_H[t.size]||0),0);
+  const cap=(uid,day)=>busyOn(uid,day)?0:N;
+
+  // ---------- 1. сигналы ----------
+  const late=tasks.filter(t=>t.status!=='done'&&(isOver(t)||(t.status==='new'&&dueTs(t)!=null&&sod(dueTs(t))===today)));
+  const waitBrand=tasks.filter(t=>t.status==='review'&&now-(t.statusAt||now)>DAY);
+  const overload=[]; for(const id of designerIds()) for(const d of days){ const h=hrs(loadT.filter(t=>t.assignee===id&&colOf(t)===d)); const c=cap(id,d); if(h>c) overload.push({id,d,h,c}); }
+  const manyRounds=tasks.filter(t=>tStats(t).rounds>=3&&(t.status!=='done'||(t.doneAt||0)>=now-30*DAY));
+  const sigs=[
+    {k:'late',n:late.length,t:'Горят сроки',d:'просрочено или срок сегодня, а задачу ещё не начали',cls:'bad'},
+    {k:'wait',n:waitBrand.length,t:'Ждут бренд больше суток',d:'лежат на проверке — тормозит не дизайнер',cls:'warn'},
+    {k:'over',n:overload.length,t:'Перегруз',d:'дни, где часов больше нормы',cls:'warn'},
+    {k:'rounds',n:manyRounds.length,t:'3+ круга правок',d:'похоже, ТЗ было неясным',cls:'warn'}].filter(x=>x.n);
+  if(S.sig&&!sigs.some(x=>x.k===S.sig)) S.sig=null;
+  const dayName=d=>{ const dt=new Date(d); return (d===today?'сегодня':WD[dt.getDay()].toLowerCase())+', '+dt.getDate()+' '+MON[dt.getMonth()]; };
+  const taskRow=t=>h('button',{class:'sig-it',onclick:()=>openTask(t.id)},t.brand?symEl(t.brand):null,h('span',{class:'sig-tt'},t.title),
+    h('span',{class:'sig-m'},t.assignee?nameOf(t.assignee):'без исполнителя'),h('span',{class:'due '+fmtDue(t).cls},fmtDue(t).text));
+  let sigList=null;
+  if(S.sig==='late') sigList=late.sort(byDue).map(taskRow);
+  if(S.sig==='wait') sigList=waitBrand.sort((a,b)=>a.statusAt-b.statusAt).map(t=>h('button',{class:'sig-it',onclick:()=>openTask(t.id)},t.brand?symEl(t.brand):null,h('span',{class:'sig-tt'},t.title),h('span',{class:'sig-m'},'проверяет '+nameOf(t.createdBy)),h('b',{class:'mono'},fmtDur(now-t.statusAt))));
+  if(S.sig==='over') sigList=overload.map(o=>h('div',{class:'sig-it',style:'cursor:default'},h('span',{class:'ava t-ava'},initials(nameOf(o.id))),h('span',{class:'sig-tt'},nameOf(o.id)+' · '+dayName(o.d)),h('b',{class:'mono bad-t'},o.h+' из '+o.c+' ч')));
+  if(S.sig==='rounds') sigList=manyRounds.map(t=>h('button',{class:'sig-it',onclick:()=>openTask(t.id)},t.brand?symEl(t.brand):null,h('span',{class:'sig-tt'},t.title),h('span',{class:'sig-m'},'ставил(а) '+nameOf(t.createdBy)),h('b',{class:'mono'},tStats(t).rounds+' круга')));
+  const b1=h('section',{class:'panel wide'},h('h3',{},'Что требует внимания'),
+    sigs.length?h('div',{class:'sig-row'},sigs.map(x=>h('button',{class:'sig '+x.cls,'aria-pressed':String(S.sig===x.k),onclick:()=>{ S.sig=S.sig===x.k?null:x.k; render(); }},h('b',{class:'sig-n'},x.n),h('span',{class:'sig-t'},x.t),h('span',{class:'sig-d'},x.d))))
+      :h('div',{class:'all-ok'},'✓ Всё идёт по плану — ничего не горит и никто не перегружен'),
+    sigList?h('div',{class:'sig-list'},sigList):null);
+
+  // ---------- 2. неделя ----------
+  const normIn=h('input',{type:'number',min:'1',max:'12',value:N,'aria-label':'Норма часов в день',onchange:e=>{ const v=Math.max(1,Math.min(12,Number(e.target.value)||6)); try{localStorage.setItem('planer-norm-h',String(v));}catch(_){} render(); }});
+  const cols=['over',...days,'later'];
+  const colLabel=c=>c==='over'?'Просрочено':c==='later'?'Позже / без срока':(()=>{ const dt=new Date(c); return h('span',{},h('b',{},c===today?'Сегодня':WD[dt.getDay()]),' '+dt.getDate()+' '+MON[dt.getMonth()]); })();
+  const grid=h('div',{class:'wk',style:'--cols:'+cols.length},h('div',{class:'wk-h wk-name'},''),...cols.map(c=>h('div',{class:'wk-h'+(c===today?' today':'')},colLabel(c))));
+  const rows=[...people.map(id=>({id})),...(!S.dsg&&loadT.some(t=>!t.assignee)?[{id:null}]:[])];
+  for(const r of rows){
+    const mine=loadT.filter(t=>r.id?t.assignee===r.id:!t.assignee);
+    const weekH=hrs(mine.filter(t=>days.includes(colOf(t)))); const weekCap=r.id?days.reduce((a,d)=>a+cap(r.id,d),0):0;
+    grid.append(h('div',{class:'wk-name'},r.id?h('span',{class:'ava t-ava'+(r.id===S.me?' me':'')},initials(nameOf(r.id))):h('span',{class:'ava none t-ava'},'?'),
+      h('div',{},h('div',{class:'wk-nm'},r.id?nameOf(r.id):'Без исполнителя'),r.id?h('div',{class:'wk-sum'+(weekH>weekCap?' bad-t':'')},weekH+' из '+weekCap+' ч за 5 дней'):h('div',{class:'wk-sum'},'не распределены'))));
+    for(const c of cols){
+      const list=mine.filter(t=>colOf(t)===c).sort(byDue); const hh=hrs(list); const unk=list.filter(t=>!t.size).length;
+      const isDay=typeof c==='number'; const busy=isDay&&r.id&&busyOn(r.id,c); const cp=isDay&&r.id?cap(r.id,c):0;
+      const pct=cp?Math.min(100,hh/cp*100):(hh?100:0); const over=isDay&&r.id&&hh>cp;
+      const cell=h('div',{class:'wk-c'+(busy?' busy':'')+(over?' over':'')+(c==='over'&&list.length?' late':'')});
+      if(isDay&&r.id) cell.append(h('div',{class:'wk-top'},h('span',{class:'wk-h2'},busy?'занят другим':hh+' / '+cp+' ч'+(unk?' +'+unk+'?':'')),
+        (r.id===S.me||isHeadUser())?h('button',{class:'wk-busy',title:busy?'Снять отметку':'Отметить: занят другой работой',onclick:()=>toggleBusy(r.id,c,!busy)},busy?'×':'занят'):null),
+        h('div',{class:'wk-bar'},h('i',{style:'width:'+pct+'%'})));
+      else if(list.length) cell.append(h('div',{class:'wk-top'},h('span',{class:'wk-h2'},list.length+' '+plural(list.length,'задача','задачи','задач')+(hh?' · '+hh+' ч':''))));
+      for(const t of list){ const ch=h('button',{class:'wk-t',style:t.brand?`--bc:${brandColor(t.brand)}`:null,draggable:String(canReassignT(t)),title:t.title,onclick:()=>openTask(t.id)},
+          h('span',{class:'wk-tt'},t.title),h('span',{class:'wk-th mono'},t.size?SIZE_H[t.size]+'ч':'?'));
+        ch.addEventListener('dragstart',e=>{ e.dataTransfer.setData('text/plain',t.id); ch.classList.add('dragging'); }); ch.addEventListener('dragend',()=>ch.classList.remove('dragging')); cell.append(ch); }
+      cell.addEventListener('dragover',e=>{ e.preventDefault(); cell.classList.add('drop'); });
+      cell.addEventListener('dragleave',e=>{ if(!cell.contains(e.relatedTarget)) cell.classList.remove('drop'); });
+      cell.addEventListener('drop',async e=>{ e.preventDefault(); cell.classList.remove('drop');
+        const t=S.tasks.find(x=>x.id===e.dataTransfer.getData('text/plain')); if(!t) return;
+        const patch={}; const notes=[];
+        if((t.assignee||null)!==r.id){ if(!canReassignT(t)){ toast('Переназначать может руководитель'); return; } patch.assignee=r.id; notes.push(r.id?'исполнитель '+nameOf(r.id):'без исполнителя'); }
+        if(isDay&&colOf(t)!==c){ if(!canPlan(t)){ toast('Срок меняет постановщик или руководитель'); return; } patch.due=ymdT(c); if(!t.dueTime) patch.dueTime='18:00'; notes.push('срок '+dayName(c)); }
+        if(!notes.length) return;
+        try{ await store.update(t.id,patch); await store.log(t.id,{kind:'event',text:'Перенесено в загрузке: '+notes.join(', '),by:S.me,at:Date.now()}); toast(notes.join(', ')); }catch(err){ toast(errText(err)); } });
+      grid.append(cell);
+    }
+  }
+  const b2=h('section',{class:'panel wide'},h('div',{class:'p-head'},h('div',{},h('h3',{},'Кого можно нагрузить'),
+      h('p',{class:'cap'},'Новые и в работе по срокам на 5 рабочих дней. Перетащи задачу на другого человека или другой день — поменяются исполнитель и срок. «?» — объём не оценён.')),
+      h('label',{class:'normset'},'Часов в день',normIn)),h('div',{class:'wk-scroll'},grid));
+
+  // ---------- 3. где тормозит ----------
+  const waitD=tasks.filter(t=>t.status==='new'||t.status==='work'); const waitB=tasks.filter(t=>t.status==='review');
+  const reqs=[...new Set(tasks.filter(t=>t.status==='review'||(tStats(t).reviewMs&&(t.status!=='done'||(t.doneAt||0)>=now-30*DAY))).map(t=>t.createdBy).filter(Boolean))];
+  const rq=reqs.map(id=>{ const g=tasks.filter(t=>t.createdBy===id); const rv=g.filter(t=>t.status==='review'); const hist=g.filter(t=>tStats(t).reviewMs&&(t.status!=='done'||(t.doneAt||0)>=now-30*DAY));
+    const reviews=hist.reduce((a,t)=>a+tStats(t).rounds+1,0); const avg=reviews?hist.reduce((a,t)=>a+tStats(t).reviewMs,0)/reviews:0;
+    const rr=hist.filter(t=>t.status==='done'); const rounds=rr.length?(rr.reduce((a,t)=>a+tStats(t).rounds,0)/rr.length).toFixed(1).replace('.',','):'—';
+    return {id,now:rv.length,long:rv.filter(t=>now-(t.statusAt||now)>DAY).length,avg,rounds}; }).sort((a,b)=>b.now-a.now||b.avg-a.avg);
+  const tot=waitD.length+waitB.length||1;
+  const b3=h('section',{class:'panel'},h('h3',{},'Где тормозит'),h('p',{class:'cap'},'Чья сейчас очередь по открытым задачам'),
+    h('div',{class:'q-bar'},h('i',{class:'qd',style:'width:'+(waitD.length/tot*100)+'%'}),h('i',{class:'qb',style:'width:'+(waitB.length/tot*100)+'%'})),
+    h('div',{class:'q-leg'},h('span',{},h('i',{class:'qd'}),'Ждёт дизайнера ',h('b',{},waitD.length),h('span',{class:'ro'},' · ≈'+hrs(waitD)+' ч')),h('span',{},h('i',{class:'qb'}),'Ждёт бренд ',h('b',{},waitB.length))),
+    rq.length?h('table',{style:'box-shadow:none;margin-top:14px'},h('thead',{},h('tr',{},h('th',{},'Проверяет'),h('th',{class:'num'},'Сейчас'),h('th',{class:'num'},'> суток'),h('th',{class:'num'},'Проверка в ср.'),h('th',{class:'num'},'Правок в ср.'))),
+      h('tbody',{},rq.map(r=>h('tr',{style:'cursor:default'},h('td',{style:'font-weight:700'},nameOf(r.id)),h('td',{class:'num'},r.now),h('td',{class:'num',style:r.long?'color:var(--bad);font-weight:700':''},r.long),h('td',{class:'num'},r.avg?fmtDur(r.avg):'—'),h('td',{class:'num'},r.rounds)))))
+      :h('div',{class:'empty',style:'margin-top:14px'},'Проверок пока не было'));
+
+  // ---------- 4. итоги ----------
+  const per=S.per==='month'?30:7; const from=now-per*DAY;
+  const doneP=tasks.filter(t=>t.status==='done'&&(t.doneAt||t.statusAt)>=from);
+  const pct=list=>{ const k=list.filter(t=>tStats(t).onTime!==null); return k.length?Math.round(k.filter(t=>tStats(t).onTime).length/k.length*100)+'%':'—'; };
+  const avgR=list=>list.length?(list.reduce((a,t)=>a+tStats(t).rounds,0)/list.length).toFixed(1).replace('.',','):'—';
+  const dz=designerIds().map(id=>{ const g=doneP.filter(t=>t.assignee===id); return {id,n:g.length,h:hrs(g),on:pct(g),r:avgR(g)}; });
+  const br=[...new Set(doneP.map(t=>t.brand||''))].map(b=>{ const g=doneP.filter(t=>(t.brand||'')===b); return {b,n:g.length,r:avgR(g),rs:g.reduce((a,t)=>a+(tStats(t).reschedules||0),0)}; }).sort((a,b)=>b.n-a.n);
+  const perSw=h('div',{class:'seg mini'},[['week','Неделя'],['month','Месяц']].map(([k,l])=>h('button',{'aria-pressed':String((S.per||'week')===k),onclick:()=>{ S.per=k; render(); }},l)));
+  const b4=h('section',{class:'panel'},h('div',{class:'p-head'},h('div',{},h('h3',{},'Итоги'),h('p',{class:'cap'},'Что принято за '+(per===7?'7 дней':'30 дней'))),perSw),
+    h('table',{style:'box-shadow:none'},h('thead',{},h('tr',{},h('th',{},'Дизайнер'),h('th',{class:'num'},'Сдано'),h('th',{class:'num'},'≈ часов'),h('th',{class:'num'},'В срок'),h('th',{class:'num'},'Правок'))),
+      h('tbody',{},dz.map(r=>h('tr',{style:'cursor:default'},h('td',{style:'font-weight:700'},nameOf(r.id)),h('td',{class:'num'},r.n),h('td',{class:'num'},r.h),h('td',{class:'num'},r.on),h('td',{class:'num'},r.r))))),
+    br.length?h('table',{style:'box-shadow:none;margin-top:14px'},h('thead',{},h('tr',{},h('th',{},'Бренд'),h('th',{class:'num'},'Сдано'),h('th',{class:'num'},'Правок в ср.'),h('th',{class:'num'},'Переносов'))),
+      h('tbody',{},br.map(r=>h('tr',{style:'cursor:default'},h('td',{},h('span',{style:'display:inline-flex;gap:6px;align-items:center;font-weight:700'},r.b?symEl(r.b):null,r.b||'Без бренда')),h('td',{class:'num'},r.n),h('td',{class:'num',style:r.r!=='—'&&parseFloat(r.r.replace(',','.'))>=2?'color:var(--warn);font-weight:700':''},r.r),h('td',{class:'num',style:r.rs?'color:var(--warn)':''},r.rs))))):h('div',{class:'empty',style:'margin-top:14px'},'За этот период ничего не принято'));
+
+  const parts=[b1,b2,b3,b4];
+  if(isHeadUser()){ const tmp=h('div'); const fp=renderLoadOld(tmp,'flow'); if(fp) parts.push(fp); }
+  m.append(h('div',{class:'grid2'},...parts));
+}
+function renderLoadOld(m,only){
   const tasks=visible(); const open=tasks.filter(t=>t.status!=='done'); const now=Date.now(); const t0=sod(now);
   const over=open.filter(isOver);
   const items=[{label:'проср.',value:over.length,cls:'bad',tipText:`Просрочено: ${over.length}`}];
@@ -1242,6 +1410,7 @@ function renderLoad(m){
           h('tbody',{},waitRows.map(r=>h('tr',{style:'cursor:default'},h('td',{},h('span',{style:'display:inline-flex;gap:6px;align-items:center;font-weight:700'},r.k?symEl(r.k):null,r.k||'Без бренда')),h('td',{class:'num'},r.n),h('td',{class:'num',style:'font-weight:700'},fmtDur(r.avg)))))):h('div',{class:'empty'},'Пока ни одна задача не была на проверке'))
     ];
   };
+  if(only==='flow') return flowPanel()[0];
   const groupTable=(title,cap,keyFn,labelFn)=>{
     const keys=[...new Set(tasks.map(keyFn))];
     const rows=keys.map(k=>{ const g=tasks.filter(t=>keyFn(t)===k); return {k,open:g.filter(t=>t.status!=='done').length,review:g.filter(t=>t.status==='review').length,over:g.filter(isOver).length,done30:g.filter(t=>t.status==='done'&&(t.doneAt||t.statusAt)>=now-30*DAY).length}; }).sort((a,b)=>b.open-a.open||b.done30-a.done30);
