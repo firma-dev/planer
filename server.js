@@ -128,6 +128,7 @@ function cleanTask(input, base) {
   if ('due' in input) { const v = str(input.due, 10); if (!isDate(v)) throw Object.assign(new Error('Плохая дата'), { status: 400 }); t.due = v; }
   if ('dueTime' in input) { const v = str(input.dueTime, 5); if (!isTime(v)) throw Object.assign(new Error('Плохое время'), { status: 400 }); t.dueTime = v; }
   if ('priority' in input) t.priority = input.priority === 'fire' ? 'fire' : 'normal';
+  if ('size' in input) t.size = ['S', 'M', 'L', 'XL'].includes(input.size) ? input.size : '';
   if ('status' in input) { if (!STATUSES.includes(input.status)) throw Object.assign(new Error('Плохой статус'), { status: 400 }); t.status = input.status; }
   return t;
 }
@@ -280,6 +281,7 @@ async function api(req, res, url) {
       const contentKeys = ['title', 'brand', 'desc', 'link'];
       const touchesContent = contentKeys.some(k => k in b);
       const touchesPlan = ['due', 'dueTime', 'priority'].some(k => k in b);
+      if ('size' in b && !canExec(a, t)) return send(res, 403, { error: 'Размер ставит исполнитель' });
       if (touchesContent && !canManage(a, t)) return send(res, 403, { error: 'Это не ваша задача' });
       if (touchesPlan && !canEdit(a, t)) return send(res, 403, { error: 'Это не ваша задача' });
       if ('assignee' in b) {
@@ -305,7 +307,24 @@ async function api(req, res, url) {
       if ('assignee' in b) next.assignee = b.assignee === null ? null : b.assignee;
       const now = Date.now();
       next.updatedAt = now;
-      if (next.status !== before) { next.statusAt = now; if (next.status === 'done') next.doneAt = now; }
+      if (next.status !== before) {
+        const spent = Math.max(0, now - (t.statusAt || t.createdAt || now));
+        const st = Object.assign({ rounds: 0, reviewMs: 0, workMs: 0, reschedules: 0 }, t.stats || {});
+        if (before === 'review') st.reviewMs += spent;
+        if (before === 'work') st.workMs += spent;
+        if (before === 'review' && next.status === 'work') st.rounds += 1;
+        if (next.status === 'review' && !st.firstReviewAt) st.firstReviewAt = now;
+        if (next.status === 'done') {
+          const [y, mo, d] = (next.due || '').split('-').map(Number);
+          if (y) { const [hh, mm] = (/^\d{2}:\d{2}$/.test(next.dueTime || '') ? next.dueTime : '23:59').split(':').map(Number); st.onTime = now <= new Date(y, mo - 1, d, hh, mm).getTime(); } else st.onTime = null;
+        }
+        next.stats = st;
+        next.statusAt = now; if (next.status === 'done') next.doneAt = now;
+      }
+      if (('due' in b || 'dueTime' in b) && (next.due !== t.due || next.dueTime !== t.dueTime) && t.due) {
+        next.stats = Object.assign({ rounds: 0, reviewMs: 0, workMs: 0, reschedules: 0 }, next.stats || t.stats || {});
+        next.stats.reschedules += 1;
+      }
       db.tasks[t.id] = next;
       save(); broadcast({ type: 'task', task: next });
       return send(res, 200, next);

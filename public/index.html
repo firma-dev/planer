@@ -552,6 +552,25 @@ textarea.t-title:focus{background:var(--card);box-shadow:0 0 0 1.5px var(--ink)}
 .role-seg.small{margin:0}
 .role-seg.small button{padding:3px 9px;font-size:11.5px}
 .t-by{flex-wrap:wrap;justify-content:flex-start;gap:6px 18px}
+
+.size-b{font:700 10.5px "JetBrains Mono",monospace;color:var(--ink2);border:1px solid var(--line2);border-radius:5px;padding:1px 5px}
+.size-pick{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.size-pick button{display:flex;flex-direction:column;align-items:flex-start;gap:1px;border:1px solid var(--line2);background:var(--card);border-radius:10px;padding:8px 10px;text-align:left}
+.size-pick button:hover{border-color:var(--ink)}
+.size-pick button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+.size-pick b{font:800 15px "JetBrains Mono",monospace}
+.sz-h{font-size:12px;font-weight:700}
+.sz-t{font-size:11px;color:var(--ink3)}
+.size-pick button[aria-pressed="true"] .sz-t{color:#C9C7CE}
+.size-pop{width:420px;max-width:calc(100vw - 40px)}
+@media (max-width:560px){ .size-pick{grid-template-columns:repeat(2,1fr)} }
+
+.t-stats{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:12px;padding:9px 12px;background:#F7F5F0;border:1px solid var(--line);border-radius:10px;font-size:12.5px;color:var(--ink2)}
+.t-stats b{color:var(--ink);font-family:"JetBrains Mono",monospace}
+.t-stats .warn-t{color:var(--warn)} .t-stats .bad-t{color:var(--bad)} .t-stats .ok-t{color:var(--ok)}
+.t-stats .live{color:var(--warn);font-weight:700}
+.tscroll{overflow-x:auto}
+.tscroll table{min-width:760px}
 </style>
 </head>
 <body>
@@ -594,6 +613,12 @@ const KINDS=['Макет','Баннер','Соцсети','Презентаци�
 const PRIOS=[['normal','Обычный'],['fire','Горит']];
 const PRIO_NAME=Object.fromEntries(PRIOS);
 const PRIO_RANK={fire:0,normal:1};
+const SIZES=[['S',1,'около часа'],['M',3,'пара-тройка часов'],['L',5,'полдня'],['XL',8,'день и больше']];
+const SIZE_H=Object.fromEntries(SIZES.map(([k,hh])=>[k,hh]));
+const sizeLabel=k=>k&&SIZE_H[k]?`${k} · ${SIZE_H[k]} ч`:'';
+function fmtDur(ms){ if(!ms||ms<60e3) return ms?'<1 мин':'—'; const m=Math.round(ms/60e3); if(m<60) return m+' мин'; const hh=Math.round(m/60); if(hh<24) return hh+' ч'; const d=Math.floor(hh/24), r=hh%24; return d+' д'+(r?' '+r+' ч':''); }
+function tStats(t){ const st=t.stats||{}; const now=Date.now(); const live=t.status==='review'?Math.max(0,now-(t.statusAt||now)):0; return {rounds:st.rounds||0,reviewMs:(st.reviewMs||0)+live,reschedules:st.reschedules||0,onTime:t.status==='done'?(st.onTime===undefined?null:st.onTime):(isOver(t)?false:null)}; }
+const hoursOf=list=>list.reduce((a,t)=>a+(SIZE_H[t.size]||0),0);
 const BRAND_HUES=['#2F5BD3','#C2410C','#0F7B6C','#9333B5','#B45309','#BE185D','#3F6212','#0E7490'];
 const DAY=864e5;
 const APP_URL=location.origin+location.pathname;
@@ -837,7 +862,7 @@ async function showLogin(msg){
 }
 function sanitize(t){
   return { id:t.id, title:str(t.title)||'Без названия', brand:str(t.brand), kind:str(t.kind), desc:str(t.desc), link:str(t.link), resultLink:str(t.resultLink),
-    status:ST_NAME[t.status]?t.status:'new', priority:t.priority==='fire'?'fire':'normal',
+    status:ST_NAME[t.status]?t.status:'new', priority:t.priority==='fire'?'fire':'normal', size:SIZE_H[t.size]?t.size:'', stats:(t.stats&&typeof t.stats==='object')?t.stats:{},
     due:str(t.due), dueTime:str(t.dueTime), createdBy:str(t.createdBy), assignee:typeof t.assignee==='string'&&t.assignee?t.assignee:null, createdAt:+t.createdAt||0, updatedAt:+t.updatedAt||0,
     statusAt:+t.statusAt||0, doneAt:+t.doneAt||0 };
 }
@@ -907,6 +932,7 @@ function card(t){
     h('div',{class:'c-bot'},
       h('span',{class:'due '+due.cls},due.text),
       t.priority==='fire'&&t.status!=='done'?h('span',{class:'prio'},'● горит'):null,
+      t.size?h('span',{class:'size-b',title:'Оценка: '+sizeLabel(t.size)},t.size):null,
       S.mode==='server'
         ? (asg?h('span',{class:'ava'+(asg===S.me?' me':''),title:'Исполнитель: '+nameOf(asg)},initials(nameOf(asg))):h('span',{class:'ava none',title:'Без исполнителя'},'?'))
         : h('span',{class:'ava'+(author===S.me?' me':''),title:'Поставил(а): '+nameOf(author)},initials(nameOf(author)))));
@@ -1045,6 +1071,39 @@ function renderLoad(m){
     ditems.push({label:i===0?'сег':`${dt.getDate()}`,value:n,we:dt.getDay()===0||dt.getDay()===6,today:i===0,tipText:`${WD[dt.getDay()]}, ${dt.getDate()} ${MON[dt.getMonth()]}: принято ${n}`}); }
   const total14=ditems.reduce((s,i)=>s+i.value,0);
   const p2=h('section',{class:'panel wide'},h('h3',{},'Сдано и принято по дням'),h('p',{class:'cap'},`Последние 14 дней: ${total14} ${plural(total14,'задача','задачи','задач')}, в среднем ${(total14/14).toFixed(1).replace('.',',')} в день.`),barChart(ditems,{label:'Принятые задачи по дням'}));
+  const designerTable=()=>{
+    const keys=[...new Set([...designerIds(),...tasks.map(t=>t.assignee||'')])];
+    const rows=keys.map(k=>{ const g=tasks.filter(t=>(t.assignee||'')===k); const open=g.filter(t=>t.status!=='done'); const d30=g.filter(t=>t.status==='done'&&(t.doneAt||t.statusAt)>=now-30*DAY);
+      const ontimeKnown=d30.filter(t=>tStats(t).onTime!==null); const ontime=ontimeKnown.length?Math.round(ontimeKnown.filter(t=>tStats(t).onTime).length/ontimeKnown.length*100)+'%':'—';
+      const rounds=d30.length?(d30.reduce((a,t)=>a+tStats(t).rounds,0)/d30.length).toFixed(1).replace('.',','):'—';
+      return {k,open:open.length,openH:hoursOf(open),noSize:open.filter(t=>!t.size).length,over:open.filter(isOver).length,d30:d30.length,d30H:hoursOf(d30),ontime,rounds}; }).filter(r=>r.open||r.d30||r.k).sort((a,b)=>b.openH-a.openH||b.open-a.open);
+    const lab=k=>h('span',{style:'display:inline-flex;gap:8px;align-items:center;font-weight:700'},k?h('span',{class:'ava'+(k===S.me?' me':''),style:'margin:0;width:22px;height:22px;font-size:9px'},initials(nameOf(k))):h('span',{class:'ava none',style:'margin:0;width:22px;height:22px;font-size:10px'},'?'),k?nameOf(k):'Без исполнителя');
+    return h('section',{class:'panel wide'},h('h3',{},'Загрузка дизайнеров'),h('p',{class:'cap'},'Часы — по размеру задач: S≈1 ч, M≈3 ч, L≈5 ч, XL≈8 ч. Оценку ставит дизайнер, когда берёт задачу.'),
+      rows.length?h('table',{style:'box-shadow:none'},h('thead',{},h('tr',{},h('th',{},''),h('th',{class:'num'},'Открыто'),h('th',{class:'num'},'≈ часов в очереди'),h('th',{class:'num'},'Без оценки'),h('th',{class:'num'},'Просроч.'),h('th',{class:'num'},'Сдано 30 дн'),h('th',{class:'num'},'≈ часов сдано'),h('th',{class:'num'},'В срок'),h('th',{class:'num'},'Правок в ср.'))),
+        h('tbody',{},rows.map(r=>h('tr',{style:'cursor:default'},h('td',{},lab(r.k)),h('td',{class:'num'},r.open),h('td',{class:'num',style:'font-weight:700'},r.openH),h('td',{class:'num',style:r.noSize?'color:var(--warn)':''},r.noSize),h('td',{class:'num',style:r.over?'color:var(--bad)':''},r.over),h('td',{class:'num'},r.d30),h('td',{class:'num'},r.d30H),h('td',{class:'num'},r.ontime),h('td',{class:'num'},r.rounds))))):h('div',{class:'empty'},'Нет данных'));
+  };
+  const flowPanel=()=>{
+    const list=tasks.filter(t=>t.status!=='done'||(t.doneAt||t.statusAt)>=now-30*DAY).sort((a,b)=>(a.status==='done')-(b.status==='done')||(b.statusAt-a.statusAt)).slice(0,60);
+    const byBrand={}; for(const t of tasks){ const x=tStats(t); if(!x.reviewMs) continue; const k=t.brand||''; (byBrand[k]||(byBrand[k]={n:0,ms:0})); byBrand[k].n++; byBrand[k].ms+=x.reviewMs; }
+    const waitRows=Object.entries(byBrand).map(([k,v])=>({k,avg:v.ms/v.n,n:v.n})).sort((a,b)=>b.avg-a.avg);
+    const stage={new:'новая',work:'в работе',review:'на проверке',done:'готово'};
+    return [
+      h('section',{class:'panel wide'},h('h3',{},'Задачи в деле'),h('p',{class:'cap'},'Открытые и сданные за 30 дней. Всё считается автоматически по движению задачи — ничего заполнять не нужно.'),
+        list.length?h('div',{class:'tscroll'},h('table',{style:'box-shadow:none'},h('thead',{},h('tr',{},h('th',{},'Задача'),h('th',{},'Исполнитель'),h('th',{},'Этап'),h('th',{class:'num'},'Размер'),h('th',{class:'num'},'Правок'),h('th',{class:'num'},'Ждала проверки'),h('th',{class:'num'},'Переносов'),h('th',{class:'num'},'В срок'))),
+          h('tbody',{},list.map(t=>{ const x=tStats(t); return h('tr',{onclick:()=>openTask(t.id),tabindex:'0',onkeydown:e=>{if(e.key==='Enter')openTask(t.id);}},
+            h('td',{},h('span',{style:'display:inline-flex;gap:8px;align-items:center;font-weight:700'},t.brand?symEl(t.brand):null,t.title)),
+            h('td',{},t.assignee?nameOf(t.assignee):h('span',{class:'ro'},'не назначен')),
+            h('td',{},h('span',{class:'st '+t.status},h('i'),stage[t.status])),
+            h('td',{class:'num'},t.size||'—'),
+            h('td',{class:'num',style:x.rounds>=2?'color:var(--warn);font-weight:700':''},x.rounds),
+            h('td',{class:'num'},fmtDur(x.reviewMs)),
+            h('td',{class:'num',style:x.reschedules?'color:var(--warn)':''},x.reschedules),
+            h('td',{class:'num',style:x.onTime===false?'color:var(--bad);font-weight:700':x.onTime?'color:var(--ok)':''},x.onTime===null?'—':x.onTime?'да':'нет')); })))):h('div',{class:'empty'},'Задач пока нет')),
+      h('section',{class:'panel'},h('h3',{},'Где ждут проверки'),h('p',{class:'cap'},'Сколько в среднем задачи бренда лежат «На проверке»'),
+        waitRows.length?h('table',{style:'box-shadow:none'},h('thead',{},h('tr',{},h('th',{},''),h('th',{class:'num'},'Задач'),h('th',{class:'num'},'В среднем ждали'))),
+          h('tbody',{},waitRows.map(r=>h('tr',{style:'cursor:default'},h('td',{},h('span',{style:'display:inline-flex;gap:6px;align-items:center;font-weight:700'},r.k?symEl(r.k):null,r.k||'Без бренда')),h('td',{class:'num'},r.n),h('td',{class:'num',style:'font-weight:700'},fmtDur(r.avg)))))):h('div',{class:'empty'},'Пока ни одна задача не была на проверке'))
+    ];
+  };
   const groupTable=(title,cap,keyFn,labelFn)=>{
     const keys=[...new Set(tasks.map(keyFn))];
     const rows=keys.map(k=>{ const g=tasks.filter(t=>keyFn(t)===k); return {k,open:g.filter(t=>t.status!=='done').length,review:g.filter(t=>t.status==='review').length,over:g.filter(isOver).length,done30:g.filter(t=>t.status==='done'&&(t.doneAt||t.statusAt)>=now-30*DAY).length}; }).sort((a,b)=>b.open-a.open||b.done30-a.done30);
@@ -1054,7 +1113,9 @@ function renderLoad(m){
   };
   m.append(h('div',{class:'grid2'},p1,p2,
     groupTable('По брендам','Где сейчас основная нагрузка',t=>t.brand||'',k=>h('span',{style:'display:inline-flex;gap:6px;align-items:center;font-weight:700'},k?symEl(k):null,k||'Без бренда')),
-    ...(S.mode==='server'?[groupTable('По дизайнерам','Сколько у кого задач',t=>t.assignee||'',k=>h('span',{style:'display:inline-flex;gap:8px;align-items:center;font-weight:700'},k?h('span',{class:'ava'+(k===S.me?' me':''),style:'margin:0;width:22px;height:22px;font-size:9px'},initials(nameOf(k))):h('span',{class:'ava none',style:'margin:0;width:22px;height:22px;font-size:10px'},'?'),k?nameOf(k):'Без исполнителя'))]:[]),
+    ...(S.mode==='server'?[designerTable()]:[]),
+    ...(S.mode==='server'&&isHeadUser()?flowPanel():[]),
+    ...(false?[groupTable('По дизайнерам','Сколько у кого задач',t=>t.assignee||'',k=>h('span',{style:'display:inline-flex;gap:8px;align-items:center;font-weight:700'},k?h('span',{class:'ava'+(k===S.me?' me':''),style:'margin:0;width:22px;height:22px;font-size:9px'},initials(nameOf(k))):h('span',{class:'ava none',style:'margin:0;width:22px;height:22px;font-size:10px'},'?'),k?nameOf(k):'Без исполнителя'))]:[]),
     groupTable('По постановщикам','Кто сколько задач ставит',t=>t.createdBy||'',k=>h('span',{style:'font-weight:700'},nameOf(k)))));
 }
 
@@ -1386,7 +1447,18 @@ function renderHead(t){
     pf.el.classList.add('small');
     byEl=h('span',{class:'by-row'},'Поставил(а): ',pf.el);
   } else byEl=h('span',{},'Поставил(а): ',h('b',{},nameOf(t.createdBy)));
-  const parts=[title,h('div',{class:'t-by'},byEl,asgEl),h('div',{class:'pills'},brandPill,duePill,prioPill)];
+  const canSize=S.canWrite&&canExecT(t)&&t.status!=='done';
+  const sizePill=(t.size||canSize)?h('button',{type:'button',class:'pill',disabled:!canSize,title:canSize?'Изменить размер':null,onclick:e=>{ const anchor=e.currentTarget; openPop(anchor,h('div',{class:'size-pop'},h('div',{class:'dp-k',style:'margin-bottom:6px'},'Размер задачи'),sizePicker(t.size,k=>{ closePop(); if(k!==t.size) patchTask(t,{size:k},`Размер: ${t.size?sizeLabel(t.size):'—'} → ${sizeLabel(k)}`); }))); }},
+    h('span',{class:'pill-k'},'Размер'),h('span',{class:'mono'},t.size?sizeLabel(t.size):'не оценён'),canSize?h('span',{class:'caret'},'▾'):null):null;
+  const parts=[title,h('div',{class:'t-by'},byEl,asgEl),h('div',{class:'pills'},brandPill,duePill,prioPill,sizePill)];
+  if(isHeadUser()&&S.mode==='server'){
+    const x=tStats(t);
+    parts.push(h('div',{class:'t-stats'},
+      h('span',{},'Кругов правок: ',h('b',{class:x.rounds>=2?'warn-t':''},x.rounds)),
+      h('span',{},'Ждала проверки: ',h('b',{},fmtDur(x.reviewMs)),t.status==='review'?h('span',{class:'live'},' сейчас'):null),
+      h('span',{},'Переносов срока: ',h('b',{class:x.reschedules?'warn-t':''},x.reschedules)),
+      h('span',{},'В срок: ',h('b',{class:x.onTime===false?'bad-t':x.onTime?'ok-t':''},x.onTime===null?'—':x.onTime?'да':'нет'))));
+  }
   if(D.brandOpen&&content){
     parts.push(h('div',{class:'pop'},h('div',{class:'brand-pick'},allBrands().map(b=>h('button',{type:'button',class:'chip','aria-pressed':String(t.brand===b),onclick:()=>{ D.brandOpen=false; if(b!==t.brand) patchTask(t,{brand:b},`Бренд: ${t.brand||'—'} → ${b}`); renderHead(t); }},symEl(b),b)))));
   }
@@ -1472,6 +1544,9 @@ function renderLog(){
   if(D.histOpen) parts.push(h('div',{class:'hist'},events.map(l=>h('div',{class:'hist-i'},h('span',{class:'when'},fmtWhen(+l.at)),h('span',{class:'hist-t'},l.text.replace(/\n/g,' · ')),h('span',{class:'hist-w'},nameOf(l.by))))));
   D.histEl.replaceChildren(...parts);
 }
+function sizePicker(cur,onPick){
+  return h('div',{class:'size-pick',role:'group','aria-label':'Размер задачи'},SIZES.map(([k,hh,txt])=>h('button',{type:'button','aria-pressed':String(cur===k),onclick:()=>onPick(k)},h('b',{},k),h('span',{class:'sz-h'},hh+' ч'),h('span',{class:'sz-t'},txt))));
+}
 function renderActions(t){
   const A=D.actEl; if(!A) return; A.replaceChildren();
   if(!S.canWrite){ A.append(h('span',{class:'spacer'}),h('button',{class:'btn copy-task',onclick:e=>copyTaskLink(t,e.currentTarget)},'🔗 Ссылка на задачу')); return; }
@@ -1502,9 +1577,15 @@ function renderActions(t){
     A.replaceChildren(h('div',{class:'ask on'},h('label',{class:'res-k'},'Ссылка на результат'),li,ci,h('div',{style:'display:flex;gap:8px'},go,h('button',{class:'btn ghost',onclick:()=>{D.askOpen=false;renderActions(t);}},'Отмена'))));
     li.focus();
   };
+  const askSize=(after)=>{
+    D.askOpen=true;
+    A.replaceChildren(h('div',{class:'ask on'},h('label',{class:'res-k'},'Сколько займёт задача?'),
+      sizePicker(t.size,async k=>{ try{ await after(k); }catch(e){ toast(errText(e)); } D.askOpen=false; refreshDrawer(); }),
+      h('div',{style:'display:flex;gap:8px'},h('button',{class:'btn ghost',onclick:()=>{D.askOpen=false;renderActions(t);}},'Отмена'))));
+  };
   const btns=[];
-  if(canTake) btns.push(h('button',{class:'btn primary',onclick:async()=>{ try{ await store.update(t.id,{assignee:S.me}); await store.log(t.id,{kind:'event',text:'Взял(а) задачу себе',by:S.me,at:Date.now()}); if(t.status==='new') await moveTask({...t,assignee:S.me},'work'); }catch(e){ toast(errText(e)); } }},t.status==='new'?'Взять себе в работу':'Взять себе'));
-  else if(t.status==='new'&&exec&&t.assignee) btns.push(h('button',{class:'btn primary',onclick:()=>moveTask(t,'work')},'Взять в работу'));
+  if(canTake) btns.push(h('button',{class:'btn primary',onclick:()=>askSize(async k=>{ await store.update(t.id,{assignee:S.me,size:k}); await store.log(t.id,{kind:'event',text:'Взял(а) задачу себе · размер '+sizeLabel(k),by:S.me,at:Date.now()}); if(t.status==='new') await moveTask({...t,assignee:S.me},'work'); })},t.status==='new'?'Взять себе в работу':'Взять себе'));
+  else if(t.status==='new'&&exec&&(t.assignee||S.mode!=='server')) btns.push(h('button',{class:'btn primary',onclick:()=>askSize(async k=>{ await store.update(t.id,{size:k}); await store.log(t.id,{kind:'event',text:'Размер: '+sizeLabel(k),by:S.me,at:Date.now()}); await moveTask({...t},'work'); })},'Взять в работу'));
   if(t.status==='work'&&exec&&(t.assignee||S.mode!=='server')) btns.push(h('button',{class:'btn primary',onclick:()=>askReview(t)},'Сдать на проверку'));
   if(t.status==='review'&&req){
     btns.push(h('button',{class:'btn ok',onclick:()=>moveTask(t,'done')},'✓ Принять'));
