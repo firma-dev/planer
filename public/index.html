@@ -861,7 +861,7 @@ class ServerStore{
     const st=await this.api('GET','/state');
     S.me=st.me.id; S.isOwner=st.admin!=null?!!st.admin:st.role==='designer'; S.role=st.admin?'admin':(st.role==='member'?'manager':st.role); S.myName=st.me.name;
     for(const u of st.users){ names[u.id]=u.name; S.urole[u.id]=u.role||'manager'; if(u.disabled) (S.disabledIds||(S.disabledIds=new Set())).add(u.id); }
-    if(!S._dsgInit){ S._dsgInit=true; if(S.role==='designer'||S.isOwner) S.dsg=S.me; if(!S._viewFromHash&&(S.role==='head'||S.role==='manager')){ S.view='team'; try{history.replaceState(null,'','#team');}catch(e){} } }
+    if(!S._dsgInit){ S._dsgInit=true; if(S.role==='designer'||S.isOwner){ if(S.view==='team'||S.view==='load') S._boardDsg=S.me; else S.dsg=S.me; } if(!S._viewFromHash&&(S.role==='head'||S.role==='manager')){ S.view='team'; try{history.replaceState(null,'','#team');}catch(e){} } }
     this.tasks=new Map(st.tasks.map(t=>[t.id,t])); this.config=st.config;
     this.emit(); this.emitCfg();
   }
@@ -2015,7 +2015,7 @@ function renderActions(t){
 }
 
 /* ============ wiring ============ */
-for(const b of $('#tabs').children) b.onclick=()=>{ const prev=S.view; S.view=b.dataset.v; if(S.fromTeam){ S.dsg=null; S.fromTeam=false; S.backView=null; if(S._tmpBrand){ S.brand=null; S._tmpBrand=false; } } else if(S.view==='team'&&prev!=='team'){ S._boardDsg=S.dsg; S.dsg=null; } else if(prev==='team'&&S.view!=='team'&&S._boardDsg!==undefined){ S.dsg=S._boardDsg; S._boardDsg=undefined; } try{history.replaceState(null,'','#'+S.view);}catch(e){location.hash=S.view;} render(); };
+for(const b of $('#tabs').children) b.onclick=()=>{ const prev=S.view; S.view=b.dataset.v; if(S.fromTeam){ S.dsg=null; S.fromTeam=false; S.backView=null; if(S._tmpBrand){ S.brand=null; S._tmpBrand=false; } } else { const wide=v=>v==='team'||v==='load'; if(wide(S.view)&&!wide(prev)){ S._boardDsg=S.dsg; S.dsg=null; } else if(wide(prev)&&!wide(S.view)&&S._boardDsg!==undefined){ S.dsg=S._boardDsg; S._boardDsg=undefined; } } try{history.replaceState(null,'','#'+S.view);}catch(e){location.hash=S.view;} render(); };
 function taskHashFull(id){ return 't-'+String(id).replace(/[^A-Za-z0-9-]/g,c=>'-'+c.charCodeAt(0).toString(36)+'-'); }
 function taskHash(id){ return S.mode==='server'?taskHashFull(id):taskHashFull(id).slice(0,8); }
 function findByHash(v){ return S.tasks.find(x=>taskHashFull(x.id)===v)||S.tasks.find(x=>taskHash(x.id)===v); }
