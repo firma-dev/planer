@@ -618,34 +618,42 @@ textarea.t-title:focus{background:var(--card);box-shadow:0 0 0 1.5px var(--ink)}
 html{overflow-y:scroll;scrollbar-gutter:stable}
 
 /* ===== помодоро ===== */
-.pomo{position:fixed;left:20px;bottom:20px;z-index:30;width:310px;overflow:hidden;display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line2);border-radius:14px;box-shadow:0 18px 50px -18px rgba(23,23,27,.35);transition:outline-color .15s;outline:2px dashed transparent;outline-offset:2px}
+.pomo{position:fixed;left:20px;bottom:20px;z-index:30;width:300px;overflow:hidden;display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 1px 0 rgba(23,23,27,.04),0 18px 44px -20px rgba(23,23,27,.38);outline:2px dashed transparent;outline-offset:3px;transition:outline-color .15s}
 .pomo[hidden]{display:none}
 .pomo.drop{outline-color:var(--accent)}
-.pomo-row{display:flex;align-items:center;gap:10px;padding:6px 6px 8px 12px;min-height:52px}
-.pomo-task{display:flex;align-items:center;gap:7px;padding:8px 8px 0 12px;font-size:12.5px;min-height:22px}
-.pomo-task .sym{width:18px;height:18px;font-size:9px;border-radius:5px}
+.pomo-task{display:flex;align-items:center;gap:8px;margin:8px 8px 0;padding:7px 6px 7px 8px;border-radius:10px;background:#F6F4F0;font-size:12.5px;min-height:34px}
+.pomo:not(.has-task) .pomo-task{background:transparent;border:1px dashed var(--line2);padding:6px 10px}
+.pomo-task .sym{width:20px;height:20px;font-size:9.5px;border-radius:6px}
 .pomo-hint{font-size:11.5px;color:var(--ink3);line-height:1.3}
 .pomo-tt{all:unset;cursor:pointer;flex:1;min-width:0;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pomo-tt:hover{text-decoration:underline;text-underline-offset:3px}
-.pomo-sum{font-size:11px;color:var(--ink2);white-space:nowrap}
-.pomo-x{border:0;background:none;color:var(--ink3);font-size:16px;line-height:1;padding:0 4px;border-radius:6px}
-.pomo-x:hover{color:var(--ink);background:#F0EEE9}
-.pomo-bar{position:absolute;left:0;right:0;bottom:0;height:3px}
-.pomo-bar i{display:block;height:100%;background:var(--accent);transition:width 1s linear}
-.pomo[data-mode="short"] .pomo-bar i,.pomo[data-mode="long"] .pomo-bar i{background:var(--ok)}
+.pomo-sum{font-size:11px;color:var(--ink3);white-space:nowrap}
+.pomo-x{width:22px;height:22px;display:grid;place-items:center;border:0;background:none;color:var(--ink3);font-size:15px;line-height:1;border-radius:6px;flex:none}
+.pomo-x:hover{color:var(--ink);background:#ECE9E3}
+.pomo-row{display:flex;align-items:center;gap:8px;padding:10px 10px 12px 14px}
+.pomo-txt{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.pomo-l{display:flex;align-items:center;gap:6px;height:14px}
 .pomo-ico{display:grid;place-items:center;flex:none}
-.pomo-txt{display:flex;flex-direction:column;line-height:1.1;min-width:0}
-.pomo-m{all:unset;cursor:pointer;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--ink3);white-space:nowrap}
+.pomo-m{all:unset;cursor:pointer;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);white-space:nowrap;line-height:1}
 .pomo-m:hover{color:var(--ink)}
 .pomo.run .pomo-m{color:var(--accent-ink)}
-.pomo.run[data-mode="short"] .pomo-m,.pomo.run[data-mode="long"] .pomo-m{color:var(--ok)}
-.pomo-t{font-size:18px;font-weight:700;color:var(--ink)}
-.pomo-d{display:flex;gap:4px;margin-left:auto}
-.pomo-d i{width:7px;height:7px;border-radius:50%;background:var(--line2)}
+.pomo.run[data-mode="short"] .pomo-m,.pomo.run[data-mode="long"] .pomo-m{color:#2F6FB3}
+.pomo-t{font-size:24px;font-weight:600;color:var(--ink);line-height:1;letter-spacing:.01em}
+.pomo:not(.run) .pomo-t{color:var(--ink2)}
+.pomo-d{display:flex;gap:3px;margin-left:2px}
+.pomo-d i{width:5px;height:5px;border-radius:50%;background:var(--line2)}
 .pomo-d i.on{background:var(--accent)}
-.pomo-b{border:0;background:var(--ink);color:#fff;width:32px;height:32px;border-radius:9px;font-size:12px;font-weight:800;flex:none}
-.pomo-b.ghost{background:transparent;color:var(--ink3);font-size:16px}
-.pomo-b.ghost:hover{color:var(--ink);background:#F0EEE9}
+.pomo-ctl{display:flex;align-items:center;gap:2px;flex:none}
+.pomo-i{width:32px;height:32px;display:grid;place-items:center;border:0;background:transparent;color:var(--ink3);border-radius:9px;padding:0}
+.pomo-i svg{width:17px;height:17px}
+.pomo-i:hover{color:var(--ink);background:#F0EEE9}
+.pomo-play{width:38px;height:38px;margin-left:4px;display:grid;place-items:center;border:0;background:var(--ink);color:#fff;border-radius:11px;padding:0;flex:none}
+.pomo-play svg{width:18px;height:18px}
+.pomo-play:hover{background:#000}
+.pomo[data-mode="short"] .pomo-play,.pomo[data-mode="long"] .pomo-play{background:#2F6FB3}
+.pomo-bar{display:block;height:3px;background:#F0EEE9}
+.pomo-bar i{display:block;height:100%;background:var(--accent);transition:width 1s linear}
+.pomo[data-mode="short"] .pomo-bar i,.pomo[data-mode="long"] .pomo-bar i{background:#5B9BDB}
 .focus-row{display:flex;align-items:baseline;gap:8px;margin-top:10px;font-size:13px}
 .focus-row b{font-size:13px}
 .focus-b{font:600 11px "JetBrains Mono",monospace;color:var(--accent-ink);white-space:nowrap}
@@ -1196,7 +1204,7 @@ const POMO=(()=>{
       zen=h('div',{class:'zen',role:'dialog','aria-label':'Режим фокуса'},
         h('div',{class:'zen-glow g1'}),h('div',{class:'zen-glow g2'}),h('div',{class:'zen-glow g3'}),
         h('div',{class:'zen-c'},zT,h('div',{class:'zen-line'},zBar),zTask),
-        h('div',{class:'zen-ctl'},zP,(()=>{ const b=h('button',{class:'zen-btn',title:'Светлая / тёмная','aria-label':'Светлая или тёмная тема',onclick:e=>{ e.stopPropagation(); zenTheme(); }}); b.innerHTML=ZSV('<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>'); return b; })(),
+        h('div',{class:'zen-ctl'},zP,(()=>{ const b=h('button',{class:'zen-btn',title:'Пропустить этап','aria-label':'Пропустить этап',onclick:e=>{ e.stopPropagation(); skip(); }}); b.innerHTML=ZSV('<path d="M6 6.5v11l8-5.5z"/><path d="M17.5 6v12"/>'); return b; })(),(()=>{ const b=h('button',{class:'zen-btn',title:'Светлая / тёмная','aria-label':'Светлая или тёмная тема',onclick:e=>{ e.stopPropagation(); zenTheme(); }}); b.innerHTML=ZSV('<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>'); return b; })(),
           (()=>{ const b=h('button',{class:'zen-btn',title:'Выйти (Esc)','aria-label':'Выйти из режима фокуса',onclick:e=>{ e.stopPropagation(); zenClose(); }}); b.innerHTML=ZSV('<path d="M6 6l12 12M18 6L6 18"/>'); return b; })()));
       const wake=()=>{ zen.classList.add('awake'); clearTimeout(zIdle); zIdle=setTimeout(()=>zen.classList.remove('awake'),2500); };
       zen.addEventListener('mousemove',wake); zen.addEventListener('touchstart',wake,{passive:true});
@@ -1216,7 +1224,7 @@ const POMO=(()=>{
     try{ if(document.fullscreenElement) document.exitFullscreen().catch(()=>{}); }catch(e){}
   }
   function zenTheme(set){ let th=set; if(!th){ th=(zen.dataset.theme==='light')?'dark':'light'; try{ localStorage.setItem('planer-zen-theme',th); }catch(e){} } zen.dataset.theme=th; }
-  function zenKey(e){ if(e.key==='Escape') zenClose(); if(e.key===' '){ e.preventDefault(); toggle(); } }
+  function zenKey(e){ if(e.key==='Escape') zenClose(); if(e.key===' '){ e.preventDefault(); toggle(); } if(e.key==='ArrowRight') skip(); }
   document.addEventListener('fullscreenchange',()=>{ if(!document.fullscreenElement&&zen&&zen.classList.contains('on')) zenClose(); });
   function beep(){ try{ const a=new (window.AudioContext||window.webkitAudioContext)(); [0,.25,.5].forEach(d=>{ const o=a.createOscillator(), g=a.createGain(); o.frequency.value=880; o.connect(g); g.connect(a.destination); g.gain.setValueAtTime(.0001,a.currentTime+d); g.gain.exponentialRampToValueAtTime(.25,a.currentTime+d+.02); g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+d+.2); o.start(a.currentTime+d); o.stop(a.currentTime+d+.22); }); }catch(e){} }
   // записать в задачу время фокуса с начала текущего отрезка; seg защищает от двойной записи из нескольких вкладок
@@ -1248,7 +1256,7 @@ const POMO=(()=>{
     if(!node) return;
     tEl.textContent=fmt(ms); mEl.textContent=NAME[st.mode];
     node.dataset.mode=st.mode; node.classList.toggle('run',run);
-    pBtn.textContent=run?'❚❚':'▶'; pBtn.title=run?'Пауза':'Старт'; pBtn.setAttribute('aria-label',pBtn.title);
+    pBtn.innerHTML=run?ZSV('<path d="M9 6v12M15 6v12"/>'):ZSV('<path d="M8.5 5.8v12.4l9.5-6.2z" fill="currentColor"/>'); pBtn.title=run?'Пауза':'Старт'; pBtn.setAttribute('aria-label',pBtn.title);
     bar.style.width=(100-ms/(LEN[st.mode]*600))+'%';
     const on=st.done%4||(st.done&&st.mode==='long'?4:0);
     dots.replaceChildren(...[0,1,2,3].map(i=>h('i',{class:i<on?'on':''}))); dots.title='Сегодня помидоров: '+st.done;
@@ -1257,7 +1265,7 @@ const POMO=(()=>{
     node.classList.toggle('has-task',!!t);
     taskRow.replaceChildren(...(t?[t.brand?symEl(t.brand):null,h('button',{class:'pomo-tt',title:'Открыть задачу',onclick:()=>openTask(t.id)},t.title),
       t.focusMs?h('span',{class:'pomo-sum mono',title:'Всего в фокусе по задаче'},fmtFocus(t.focusMs)):null,
-      h('button',{class:'pomo-x',title:'Отвязать задачу','aria-label':'Отвязать задачу',onclick:()=>attach(null)},'×')]:[h('span',{class:'pomo-hint'},'Перетащи сюда задачу — время в фокусе запишется в неё')]).filter(Boolean));
+      h('button',{class:'pomo-x',title:'Отвязать задачу','aria-label':'Отвязать задачу',onclick:()=>attach(null)},'×')]:[h('span',{class:'pomo-hint'},'Перетащи сюда задачу, чтобы считать время')]).filter(Boolean));
   }
   function toggle(){
     if(st.endAt){ flush(false); st.left=leftMs(); st.endAt=0; }
@@ -1265,6 +1273,14 @@ const POMO=(()=>{
     save(); paint();
   }
   function reset(){ if(st.endAt) flush(false); st.endAt=0; st.left=LEN[st.mode]*60000; st.seg=null; save(); paint(); }
+  function skip(){
+    const was=st.mode, wasRun=!!st.endAt;
+    if(wasRun) flush(false);
+    st.mode=was==='focus'?((st.done+1)%4===0?'long':'short'):'focus';
+    st.endAt=0; st.left=LEN[st.mode]*60000; st.seg=null;
+    if(wasRun) startRun();
+    save(); paint();
+  }
   function cycle(){ if(st.endAt) return; st.mode=st.mode==='focus'?'short':st.mode==='short'?'long':'focus'; st.left=LEN[st.mode]*60000; save(); paint(); }
   function attach(id){
     if(st.endAt){ flush(false); st.runLeft=leftMs(); st.seg=Math.random().toString(36).slice(2); }
@@ -1279,9 +1295,18 @@ const POMO=(()=>{
   return { paint, el(){
     if(!node){
       tEl=h('span',{class:'pomo-t mono'}); mEl=h('button',{class:'pomo-m',title:'Сменить: фокус / перерыв',onclick:cycle});
-      pBtn=h('button',{class:'pomo-b',onclick:toggle}); dots=h('span',{class:'pomo-d'}); bar=h('i'); taskRow=h('div',{class:'pomo-task'});
-      const ico=h('span',{class:'pomo-ico','aria-hidden':'true'}); ico.innerHTML='<svg viewBox="0 0 20 20" width="18" height="18"><circle cx="10" cy="11.5" r="7.5" fill="var(--accent)"/><path d="M10 4.5c-1-1.6-2.6-2-4-1.6 1 .4 1.8 1.1 2.2 2M10 4.5c1-1.6 2.6-2 4-1.6-1 .4-1.8 1.1-2.2 2" stroke="var(--ok)" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>';
-      node=h('div',{class:'pomo',role:'timer'},h('span',{class:'pomo-bar'},bar),taskRow,h('div',{class:'pomo-row'},ico,h('div',{class:'pomo-txt'},mEl,tEl),dots,pBtn,h('button',{class:'pomo-b ghost',title:'Сбросить','aria-label':'Сбросить',onclick:reset},'↺'),(()=>{ const zb=h('button',{class:'pomo-b ghost',title:'Режим фокуса — только таймер','aria-label':'Режим фокуса',onclick:zenOpen}); zb.dataset.k='zen'; zb.innerHTML='<svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="10" cy="10" r="3.2"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.3 4.3l1.4 1.4M14.3 14.3l1.4 1.4M4.3 15.7l1.4-1.4M14.3 5.7l1.4-1.4"/></svg>'; return zb; })()));
+      pBtn=h('button',{class:'pomo-play',onclick:toggle}); dots=h('span',{class:'pomo-d'}); bar=h('i'); taskRow=h('div',{class:'pomo-task'});
+      const ico=h('span',{class:'pomo-ico','aria-hidden':'true'}); ico.innerHTML='<svg viewBox="0 0 20 20" width="13" height="13"><circle cx="10" cy="11.5" r="7.5" fill="var(--accent)"/><path d="M10 4.5c-1-1.6-2.6-2-4-1.6 1 .4 1.8 1.1 2.2 2M10 4.5c1-1.6 2.6-2 4-1.6-1 .4-1.8 1.1-2.2 2" stroke="var(--ok)" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>';
+      const ib=(title,svg,fn)=>{ const b=h('button',{class:'pomo-i',title,'aria-label':title,onclick:fn}); b.innerHTML=ZSV(svg); return b; };
+      node=h('div',{class:'pomo',role:'timer'},taskRow,
+        h('div',{class:'pomo-row'},
+          h('div',{class:'pomo-txt'},h('div',{class:'pomo-l'},ico,mEl,dots),tEl),
+          h('div',{class:'pomo-ctl'},
+            ib('Пропустить этап','<path d="M6 6.5v11l8-5.5z" fill="currentColor" stroke="none"/><path d="M17.5 6v12"/>',skip),
+            ib('Сбросить','<path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v4h4"/>',reset),
+            ib('Режим фокуса — только таймер','<circle cx="12" cy="12" r="3.4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/>',zenOpen),
+            pBtn)),
+        h('span',{class:'pomo-bar'},bar));
       node.addEventListener('dragover',e=>{ e.preventDefault(); node.classList.add('drop'); });
       node.addEventListener('dragleave',e=>{ if(!node.contains(e.relatedTarget)) node.classList.remove('drop'); });
       node.addEventListener('drop',e=>{ e.preventDefault(); node.classList.remove('drop'); const id=e.dataTransfer.getData('text/plain'); const t=S.tasks.find(x=>x.id===id); if(!t) return;
