@@ -1183,7 +1183,7 @@ const POMO=(()=>{
       zP=h('button',{class:'zen-btn',onclick:e=>{ e.stopPropagation(); toggle(); }});
       zen=h('div',{class:'zen',role:'dialog','aria-label':'Режим фокуса'},
         h('div',{class:'zen-glow g1'}),h('div',{class:'zen-glow g2'}),
-        h('div',{class:'zen-c'},zT,h('div',{class:'zen-line'},zBar)),
+        h('div',{class:'zen-c'},zT,h('div',{class:'zen-line'},zBar),zTask),
         h('div',{class:'zen-ctl'},zP,(()=>{ const b=h('button',{class:'zen-btn',title:'Светлая / тёмная','aria-label':'Светлая или тёмная тема',onclick:e=>{ e.stopPropagation(); zenTheme(); }}); b.innerHTML=ZSV('<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>'); return b; })(),
           (()=>{ const b=h('button',{class:'zen-btn',title:'Выйти (Esc)','aria-label':'Выйти из режима фокуса',onclick:e=>{ e.stopPropagation(); zenClose(); }}); b.innerHTML=ZSV('<path d="M6 6l12 12M18 6L6 18"/>'); return b; })()));
       const wake=()=>{ zen.classList.add('awake'); clearTimeout(zIdle); zIdle=setTimeout(()=>zen.classList.remove('awake'),2500); };
