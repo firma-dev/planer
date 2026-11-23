@@ -653,9 +653,9 @@ html{overflow-y:scroll;scrollbar-gutter:stable}
 
 /* ===== режим фокуса ===== */
 html.zen-open{overflow:hidden;scrollbar-gutter:auto}
-.zen{--bg:#f4e6d0;--glow1:rgba(255,190,120,.42);--glow1b:rgba(255,176,110,.16);--glow2:rgba(255,214,160,.34);--ink:rgba(92,58,30,.55);--ink-dim:rgba(92,58,30,.32);--ink-faint:rgba(92,58,30,.22);--line:rgba(92,58,30,.07);--fill:rgba(160,96,44,.28);--btn:rgba(92,58,30,.14);--btn-ink:rgba(92,58,30,.5);--btn-hi:rgba(70,42,20,.85);--shadow:none;
+.zen{--bg:#f4e6d0;--glow1:rgba(255,190,120,.42);--glow1b:rgba(255,176,110,.16);--glow2:rgba(255,214,160,.34);--ink:rgba(92,58,30,.55);--ink-dim:rgba(92,58,30,.32);--ink-faint:rgba(92,58,30,.22);--line:rgba(92,58,30,.07);--fill:rgba(160,96,44,.28);--btn:rgba(92,58,30,.14);--btn-ink:rgba(92,58,30,.5);--btn-hi:rgba(70,42,20,.85);--shadow:none;--blik:rgba(255,248,236,.55);
   position:fixed;inset:0;z-index:200;background:var(--bg);overflow:hidden;opacity:0;transition:opacity 1.2s ease,background-color 1.6s ease;cursor:none;display:grid;place-items:center;font-family:Manrope,system-ui,sans-serif}
-.zen[data-theme="dark"]{--bg:#0d0906;--glow1:rgba(255,150,70,.26);--glow1b:rgba(255,120,50,.10);--glow2:rgba(255,190,120,.12);--ink:rgba(255,224,192,.55);--ink-dim:rgba(255,224,192,.32);--ink-faint:rgba(243,217,189,.24);--line:rgba(243,217,189,.07);--fill:rgba(255,170,100,.35);--btn:rgba(243,217,189,.12);--btn-ink:rgba(243,217,189,.5);--btn-hi:rgba(255,230,205,.88);--shadow:0 0 28px rgba(255,150,80,.18)}
+.zen[data-theme="dark"]{--bg:#0d0906;--glow1:rgba(255,150,70,.26);--glow1b:rgba(255,120,50,.10);--glow2:rgba(255,190,120,.12);--ink:rgba(255,224,192,.55);--ink-dim:rgba(255,224,192,.32);--ink-faint:rgba(243,217,189,.24);--line:rgba(243,217,189,.07);--fill:rgba(255,170,100,.35);--btn:rgba(243,217,189,.12);--btn-ink:rgba(243,217,189,.5);--btn-hi:rgba(255,230,205,.88);--shadow:0 0 28px rgba(255,150,80,.18);--blik:rgba(255,214,170,.07)}
 .zen.on{opacity:1}
 .zen.awake{cursor:default}
 .zen-glow{position:absolute;border-radius:50%;pointer-events:none;filter:blur(80px);will-change:transform,opacity;transition:background 1.6s ease}
@@ -670,14 +670,17 @@ html.zen-open{overflow:hidden;scrollbar-gutter:auto}
 .zen-line{width:96px;height:1px;background:var(--line);margin-top:6px;overflow:hidden}
 .zen-line i{display:block;height:100%;background:var(--fill);transition:width 1s linear}
 .zen-task{font-size:12.5px;color:var(--ink-faint);max-width:60vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:1em;transition:color 1.6s}
-.zen-ctl{position:absolute;left:0;right:0;bottom:36px;display:flex;justify-content:center;gap:10px;opacity:0;transition:opacity .9s ease}
+.zen-ctl{position:absolute;left:0;right:0;top:28px;display:flex;justify-content:center;gap:6px;opacity:0;transition:opacity .9s ease}
 .zen.awake .zen-ctl{opacity:1}
-.zen-btn{border:1px solid var(--btn);background:transparent;color:var(--btn-ink);border-radius:999px;padding:7px 16px;font:500 12.5px Manrope,sans-serif;cursor:pointer;transition:color .4s,border-color .4s}
-.zen-btn:hover{color:var(--btn-hi);border-color:var(--btn-ink)}
+.zen-btn{width:38px;height:38px;display:grid;place-items:center;border:0;background:transparent;color:var(--btn-ink);border-radius:50%;cursor:pointer;transition:color .4s,background-color .4s}
+.zen-btn:hover{color:var(--btn-hi);background:var(--line)}
+.zen-blik{position:absolute;inset:-30%;pointer-events:none;background:linear-gradient(115deg,transparent 38%,var(--blik) 50%,transparent 62%);filter:blur(24px);animation:zenBlik 26s cubic-bezier(.45,0,.55,1) infinite}
+.zen:not(.run) .zen-blik{animation-play-state:paused}
+@keyframes zenBlik{0%{transform:translateX(-45%);opacity:0}15%{opacity:1}65%{opacity:1}80%,100%{transform:translateX(45%);opacity:0}}
 @keyframes zenBreath{from{opacity:.8;transform:scale(.97)}to{opacity:1;transform:scale(1.03)}}
 @keyframes zenDrift{from{translate:-2vmax 1vmax}to{translate:2vmax -1.5vmax}}
 @keyframes zenDrift2{from{translate:-6vmax -3vmax;opacity:.7}to{translate:14vmax 8vmax;opacity:1}}
-@media (prefers-reduced-motion:reduce){ .zen-glow{animation:none} }
+@media (prefers-reduced-motion:reduce){ .zen-glow,.zen-blik{animation:none} .zen-blik{display:none} }
 /* ===== загрузка ===== */
 .wk-p:hover{box-shadow:0 2px 8px -2px rgba(0,0,0,.25)}
 .wk-c:hover{background:#EDEAE4}
@@ -1161,6 +1164,7 @@ function renderMain(){
 }
 
 /* ============ Помодоро — личный таймер; время в фокусе пишется в задачу, если её перетащить на таймер ============ */
+const ZSV=d=>'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">'+d+'</svg>';
 const POMO=(()=>{
   const LEN={focus:25,short:5,long:15}, NAME={focus:'Фокус',short:'Перерыв',long:'Длинный перерыв'};
   const KEY='planer-pomo';
@@ -1178,9 +1182,10 @@ const POMO=(()=>{
       zT=h('div',{class:'zen-t'}); zM=h('div',{class:'zen-m'}); zTask=h('div',{class:'zen-task'}); zBar=h('i');
       zP=h('button',{class:'zen-btn',onclick:e=>{ e.stopPropagation(); toggle(); }});
       zen=h('div',{class:'zen',role:'dialog','aria-label':'Режим фокуса'},
-        h('div',{class:'zen-glow g1'}),h('div',{class:'zen-glow g2'}),
-        h('div',{class:'zen-c'},zM,zT,h('div',{class:'zen-line'},zBar),zTask),
-        h('div',{class:'zen-ctl'},zP,h('button',{class:'zen-btn',onclick:e=>{ e.stopPropagation(); zenTheme(); }},'Светлая / тёмная'),h('button',{class:'zen-btn',onclick:e=>{ e.stopPropagation(); zenClose(); }},'Выйти · Esc')));
+        h('div',{class:'zen-glow g1'}),h('div',{class:'zen-glow g2'}),h('div',{class:'zen-blik'}),
+        h('div',{class:'zen-c'},zT),
+        h('div',{class:'zen-ctl'},zP,(()=>{ const b=h('button',{class:'zen-btn',title:'Светлая / тёмная','aria-label':'Светлая или тёмная тема',onclick:e=>{ e.stopPropagation(); zenTheme(); }}); b.innerHTML=ZSV('<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>'); return b; })(),
+          (()=>{ const b=h('button',{class:'zen-btn',title:'Выйти (Esc)','aria-label':'Выйти из режима фокуса',onclick:e=>{ e.stopPropagation(); zenClose(); }}); b.innerHTML=ZSV('<path d="M6 6l12 12M18 6L6 18"/>'); return b; })()));
       const wake=()=>{ zen.classList.add('awake'); clearTimeout(zIdle); zIdle=setTimeout(()=>zen.classList.remove('awake'),2500); };
       zen.addEventListener('mousemove',wake); zen.addEventListener('touchstart',wake,{passive:true});
       zen.addEventListener('dblclick',zenClose);
@@ -1226,7 +1231,7 @@ const POMO=(()=>{
     const ms=leftMs(), run=!!st.endAt;
     document.title=run?(st.mode==='focus'?'● ':'○ ')+fmt(ms)+' · '+baseTitle:baseTitle;
     if(zen&&zen.isConnected){ zT.textContent=fmt(ms); zM.textContent=run?NAME[st.mode]:'пауза'; zen.dataset.mode=st.mode; zen.classList.toggle('run',run);
-      zBar.style.width=(100-ms/(LEN[st.mode]*600))+'%'; zP.textContent=run?'Пауза':'Продолжить';
+      zBar.style.width=(100-ms/(LEN[st.mode]*600))+'%'; zP.innerHTML=run?ZSV('<path d="M9 6v12M15 6v12"/>'):ZSV('<path d="M8 5.5v13l10-6.5z"/>'); zP.title=run?'Пауза (пробел)':'Продолжить (пробел)'; zP.setAttribute('aria-label',zP.title);
       const zt=st.taskId&&S.tasks.find(x=>x.id===st.taskId); zTask.textContent=zt?zt.title:''; }
     if(!node) return;
     tEl.textContent=fmt(ms); mEl.textContent=NAME[st.mode];
