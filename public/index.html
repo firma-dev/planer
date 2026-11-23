@@ -618,9 +618,19 @@ textarea.t-title:focus{background:var(--card);box-shadow:0 0 0 1.5px var(--ink)}
 html{overflow-y:scroll;scrollbar-gutter:stable}
 
 /* ===== помодоро ===== */
-.pomo{position:fixed;left:20px;bottom:20px;z-index:30;width:250px;overflow:hidden;display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line2);border-radius:14px;padding:6px 6px 6px 12px;min-height:52px;box-shadow:0 18px 50px -18px rgba(23,23,27,.35)}
+.pomo{position:fixed;left:20px;bottom:20px;z-index:30;width:290px;overflow:hidden;display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line2);border-radius:14px;box-shadow:0 18px 50px -18px rgba(23,23,27,.35);transition:outline-color .15s;outline:2px dashed transparent;outline-offset:2px}
 .pomo[hidden]{display:none}
-.pomo-bar{position:absolute;left:0;right:0;bottom:0;height:3px;background:transparent}
+.pomo.drop{outline-color:var(--accent)}
+.pomo-row{display:flex;align-items:center;gap:10px;padding:6px 6px 8px 12px;min-height:52px}
+.pomo-task{display:flex;align-items:center;gap:7px;padding:8px 8px 0 12px;font-size:12.5px;min-height:22px}
+.pomo-task .sym{width:18px;height:18px;font-size:9px;border-radius:5px}
+.pomo-hint{font-size:11.5px;color:var(--ink3);line-height:1.3}
+.pomo-tt{all:unset;cursor:pointer;flex:1;min-width:0;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pomo-tt:hover{text-decoration:underline;text-underline-offset:3px}
+.pomo-sum{font-size:11px;color:var(--ink2);white-space:nowrap}
+.pomo-x{border:0;background:none;color:var(--ink3);font-size:16px;line-height:1;padding:0 4px;border-radius:6px}
+.pomo-x:hover{color:var(--ink);background:#F0EEE9}
+.pomo-bar{position:absolute;left:0;right:0;bottom:0;height:3px}
 .pomo-bar i{display:block;height:100%;background:var(--accent);transition:width 1s linear}
 .pomo[data-mode="short"] .pomo-bar i,.pomo[data-mode="long"] .pomo-bar i{background:var(--ok)}
 .pomo-ico{display:grid;place-items:center;flex:none}
@@ -636,6 +646,9 @@ html{overflow-y:scroll;scrollbar-gutter:stable}
 .pomo-b{border:0;background:var(--ink);color:#fff;width:32px;height:32px;border-radius:9px;font-size:12px;font-weight:800;flex:none}
 .pomo-b.ghost{background:transparent;color:var(--ink3);font-size:16px}
 .pomo-b.ghost:hover{color:var(--ink);background:#F0EEE9}
+.focus-row{display:flex;align-items:baseline;gap:8px;margin-top:10px;font-size:13px}
+.focus-row b{font-size:13px}
+.focus-b{font:600 11px "JetBrains Mono",monospace;color:var(--accent-ink);white-space:nowrap}
 @media (max-width:560px){ .pomo{left:12px;bottom:12px;width:auto;right:12px} }
 /* ===== загрузка ===== */
 .wk-p:hover{box-shadow:0 2px 8px -2px rgba(0,0,0,.25)}
@@ -1061,7 +1074,7 @@ async function showLogin(msg){
 function sanitize(t){
   return { id:t.id, title:str(t.title)||'Без названия', brand:str(t.brand), kind:str(t.kind), desc:str(t.desc), link:str(t.link), resultLink:str(t.resultLink),
     status:ST_NAME[t.status]?t.status:'new', priority:t.priority==='fire'?'fire':'normal', size:SIZE_H[t.size]?t.size:'', stats:(t.stats&&typeof t.stats==='object')?t.stats:{},
-    due:str(t.due), dueTime:str(t.dueTime), start:/^\d{4}-\d{2}-\d{2}$/.test(t.start||'')?t.start:'', dayH:(+t.dayH>=1&&+t.dayH<=8)?+t.dayH:0, createdBy:str(t.createdBy), assignee:typeof t.assignee==='string'&&t.assignee?t.assignee:null, createdAt:+t.createdAt||0, updatedAt:+t.updatedAt||0,
+    due:str(t.due), dueTime:str(t.dueTime), start:/^\d{4}-\d{2}-\d{2}$/.test(t.start||'')?t.start:'', dayH:(+t.dayH>=1&&+t.dayH<=8)?+t.dayH:0, focusMs:Math.max(0,+t.focusMs||0), pomos:Math.max(0,+t.pomos||0), createdBy:str(t.createdBy), assignee:typeof t.assignee==='string'&&t.assignee?t.assignee:null, createdAt:+t.createdAt||0, updatedAt:+t.updatedAt||0,
     statusAt:+t.statusAt||0, doneAt:+t.doneAt||0 };
 }
 
@@ -1119,24 +1132,35 @@ function renderMain(){
   if(had){ q.focus(); try{ q.setSelectionRange(ss,se); }catch(e){} }
 }
 
-/* ============ Помодоро — личный, только в этом браузере ============ */
+/* ============ Помодоро — личный таймер; время в фокусе пишется в задачу, если её перетащить на таймер ============ */
 const POMO=(()=>{
   const LEN={focus:25,short:5,long:15}, NAME={focus:'Фокус',short:'Перерыв',long:'Длинный перерыв'};
   const KEY='planer-pomo';
   const today=()=>{ const d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); };
-  let st; try{ st=JSON.parse(localStorage.getItem(KEY)||'null'); }catch(e){}
-  if(!st||typeof st!=='object') st={mode:'focus',endAt:0,left:LEN.focus*60000,done:0,day:today()};
+  const load=()=>{ let x; try{ x=JSON.parse(localStorage.getItem(KEY)||'null'); }catch(e){} return x&&typeof x==='object'?x:null; };
+  let st=load()||{mode:'focus',endAt:0,left:LEN.focus*60000,done:0,day:today()};
   if(st.day!==today()){ st.done=0; st.day=today(); }
   const save=()=>{ try{ localStorage.setItem(KEY,JSON.stringify(st)); }catch(e){} };
   const leftMs=()=>st.endAt?Math.max(0,st.endAt-Date.now()):st.left;
   const fmt=ms=>{ const t=Math.ceil(ms/1000); return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0'); };
-  let node=null, tEl, mEl, pBtn, dots, bar, baseTitle=document.title;
+  let node, tEl, mEl, pBtn, dots, bar, taskRow, baseTitle=document.title;
   function beep(){ try{ const a=new (window.AudioContext||window.webkitAudioContext)(); [0,.25,.5].forEach(d=>{ const o=a.createOscillator(), g=a.createGain(); o.frequency.value=880; o.connect(g); g.connect(a.destination); g.gain.setValueAtTime(.0001,a.currentTime+d); g.gain.exponentialRampToValueAtTime(.25,a.currentTime+d+.02); g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+d+.2); o.start(a.currentTime+d); o.stop(a.currentTime+d+.22); }); }catch(e){} }
+  // записать в задачу время фокуса с начала текущего отрезка; seg защищает от двойной записи из нескольких вкладок
+  function flush(full){
+    if(st.mode!=='focus'||!st.taskId||!st.seg) return;
+    const spent=full?st.runLeft:Math.max(0,(st.runLeft||0)-leftMs());
+    const id=st.taskId; st.seg=null;
+    if(spent<15000&&!full) return;
+    if(S.mode==='server') store.update(id,full?{focusAdd:spent,pomo:true}:{focusAdd:spent}).catch(()=>{});
+  }
+  function startRun(){ st.endAt=Date.now()+st.left; st.runLeft=st.left; st.seg=Math.random().toString(36).slice(2); }
   function finish(){
-    const was=st.mode;
+    const fresh=load(); if(fresh&&fresh.seg!==st.seg){ st=fresh; paint(); return; } // другая вкладка уже закрыла отрезок
+    const was=st.mode; flush(true);
     if(was==='focus'){ st.done++; st.mode=st.done%4===0?'long':'short'; } else st.mode='focus';
     st.endAt=0; st.left=LEN[st.mode]*60000; save(); beep();
-    const msg=was==='focus'?(st.mode==='long'?'Четыре помидора — длинный перерыв 15 минут':'Помидор готов — перерыв 5 минут'):'Перерыв закончился — за работу';
+    const tname=st.taskId&&S.tasks.find(t=>t.id===st.taskId)?.title;
+    const msg=was==='focus'?(st.mode==='long'?'Четыре помидора — длинный перерыв 15 минут':'Помидор готов'+(tname?' · '+tname:'')+' — перерыв 5 минут'):'Перерыв закончился — за работу';
     toast(msg);
     try{ if('Notification' in window&&Notification.permission==='granted') new Notification('Планер',{body:msg,silent:true}); }catch(e){}
     paint();
@@ -1149,26 +1173,46 @@ const POMO=(()=>{
     node.dataset.mode=st.mode; node.classList.toggle('run',run);
     pBtn.textContent=run?'❚❚':'▶'; pBtn.title=run?'Пауза':'Старт'; pBtn.setAttribute('aria-label',pBtn.title);
     bar.style.width=(100-ms/(LEN[st.mode]*600))+'%';
-    dots.replaceChildren(...[0,1,2,3].map(i=>h('i',{class:i<(st.done%4||(st.done&&st.mode==='long'?4:0))?'on':''})));
-    dots.title='Сегодня помидоров: '+st.done;
+    const on=st.done%4||(st.done&&st.mode==='long'?4:0);
+    dots.replaceChildren(...[0,1,2,3].map(i=>h('i',{class:i<on?'on':''}))); dots.title='Сегодня помидоров: '+st.done;
+    const t=st.taskId&&S.tasks.find(x=>x.id===st.taskId);
+    if(st.taskId&&S.loaded&&!t){ st.taskId=null; save(); }
+    node.classList.toggle('has-task',!!t);
+    taskRow.replaceChildren(...(t?[t.brand?symEl(t.brand):null,h('button',{class:'pomo-tt',title:'Открыть задачу',onclick:()=>openTask(t.id)},t.title),
+      t.focusMs?h('span',{class:'pomo-sum mono',title:'Всего в фокусе по задаче'},fmtFocus(t.focusMs)):null,
+      h('button',{class:'pomo-x',title:'Отвязать задачу','aria-label':'Отвязать задачу',onclick:()=>attach(null)},'×')]:[h('span',{class:'pomo-hint'},'Перетащи сюда задачу — время в фокусе запишется в неё')]).filter(Boolean));
   }
   function toggle(){
-    if(st.endAt){ st.left=leftMs(); st.endAt=0; }
-    else { st.endAt=Date.now()+st.left; try{ if('Notification' in window&&Notification.permission==='default') Notification.requestPermission(); }catch(e){} }
+    if(st.endAt){ flush(false); st.left=leftMs(); st.endAt=0; }
+    else { startRun(); try{ if('Notification' in window&&Notification.permission==='default') Notification.requestPermission(); }catch(e){} }
     save(); paint();
   }
-  function reset(){ st.endAt=0; st.left=LEN[st.mode]*60000; save(); paint(); }
+  function reset(){ if(st.endAt) flush(false); st.endAt=0; st.left=LEN[st.mode]*60000; st.seg=null; save(); paint(); }
   function cycle(){ if(st.endAt) return; st.mode=st.mode==='focus'?'short':st.mode==='short'?'long':'focus'; st.left=LEN[st.mode]*60000; save(); paint(); }
+  function attach(id){
+    if(st.endAt){ flush(false); st.runLeft=leftMs(); st.seg=Math.random().toString(36).slice(2); }
+    st.taskId=id||null;
+    if(id&&!st.endAt){ if(st.mode!=='focus'){ st.mode='focus'; st.left=LEN.focus*60000; } startRun(); try{ if('Notification' in window&&Notification.permission==='default') Notification.requestPermission(); }catch(e){} }
+    save(); paint();
+    if(id){ const t=S.tasks.find(x=>x.id===id); if(t) toast('Фокус на задаче: '+t.title); }
+  }
   setInterval(()=>{ if(st.endAt&&Date.now()>=st.endAt) finish(); else if(st.endAt) paint(); },1000);
-  window.addEventListener('storage',e=>{ if(e.key===KEY){ try{ st=JSON.parse(e.newValue)||st; }catch(_){} paint(); } });
-  return { el(){
+  window.addEventListener('storage',e=>{ if(e.key===KEY){ st=load()||st; paint(); } });
+  window.addEventListener('pagehide',()=>{ /* отрезок продолжает идти и после закрытия — запишется при паузе, сбросе или окончании */ });
+  return { paint, el(){
     if(!node){
       tEl=h('span',{class:'pomo-t mono'}); mEl=h('button',{class:'pomo-m',title:'Сменить: фокус / перерыв',onclick:cycle});
-      pBtn=h('button',{class:'pomo-b',onclick:toggle}); dots=h('span',{class:'pomo-d'}); bar=h('i');
-      node=h('div',{class:'pomo',role:'timer'},h('span',{class:'pomo-bar'},bar),(()=>{ const sp=h('span',{class:'pomo-ico','aria-hidden':'true'}); sp.innerHTML='<svg viewBox="0 0 20 20" width="18" height="18"><circle cx="10" cy="11.5" r="7.5" fill="var(--accent)"/><path d="M10 4.5c-1-1.6-2.6-2-4-1.6 1 .4 1.8 1.1 2.2 2M10 4.5c1-1.6 2.6-2 4-1.6-1 .4-1.8 1.1-2.2 2" stroke="var(--ok)" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>'; return sp; })(),h('div',{class:'pomo-txt'},mEl,tEl),dots,pBtn,h('button',{class:'pomo-b ghost',title:'Сбросить','aria-label':'Сбросить',onclick:reset},'↺'));
+      pBtn=h('button',{class:'pomo-b',onclick:toggle}); dots=h('span',{class:'pomo-d'}); bar=h('i'); taskRow=h('div',{class:'pomo-task'});
+      const ico=h('span',{class:'pomo-ico','aria-hidden':'true'}); ico.innerHTML='<svg viewBox="0 0 20 20" width="18" height="18"><circle cx="10" cy="11.5" r="7.5" fill="var(--accent)"/><path d="M10 4.5c-1-1.6-2.6-2-4-1.6 1 .4 1.8 1.1 2.2 2M10 4.5c1-1.6 2.6-2 4-1.6-1 .4-1.8 1.1-2.2 2" stroke="var(--ok)" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>';
+      node=h('div',{class:'pomo',role:'timer'},h('span',{class:'pomo-bar'},bar),taskRow,h('div',{class:'pomo-row'},ico,h('div',{class:'pomo-txt'},mEl,tEl),dots,pBtn,h('button',{class:'pomo-b ghost',title:'Сбросить','aria-label':'Сбросить',onclick:reset},'↺')));
+      node.addEventListener('dragover',e=>{ e.preventDefault(); node.classList.add('drop'); });
+      node.addEventListener('dragleave',e=>{ if(!node.contains(e.relatedTarget)) node.classList.remove('drop'); });
+      node.addEventListener('drop',e=>{ e.preventDefault(); node.classList.remove('drop'); const id=e.dataTransfer.getData('text/plain'); const t=S.tasks.find(x=>x.id===id); if(!t) return;
+        if(S.mode==='server'&&!canExecT(t)){ toast('В фокус можно взять только свою задачу'); return; } attach(id); });
     }
     paint(); return node; } };
 })();
+function fmtFocus(ms){ const m=Math.round(ms/60000); if(m<60) return m+' мин'; const hh=Math.floor(m/60), mm=m%60; return hh+' ч'+(mm?' '+mm+' мин':''); }
 function renderMainInner(){
   const m=$('#main'); m.replaceChildren();
   if(!S.loaded){ m.append(h('div',{class:'loading'},'Загружаю доску…')); return; }
@@ -1190,6 +1234,7 @@ function card(t){
       h('span',{class:'due '+due.cls},due.text),
       t.priority==='fire'&&t.status!=='done'?h('span',{class:'prio'},'● горит'):null,
       t.size?h('span',{class:'size-b',title:'Оценка: '+sizeLabel(t.size)},sizeH(t.size)):null,
+      t.focusMs>=60000?h('span',{class:'focus-b',title:'В фокусе по помодоро'+(t.pomos?': '+t.pomos+' '+plural(t.pomos,'помидор','помидора','помидоров'):'')},'● '+fmtFocus(t.focusMs)):null,
       S.mode==='server'
         ? (asg?h('span',{class:'ava'+(asg===S.me?' me':''),title:'Исполнитель: '+nameOf(asg)},initials(nameOf(asg))):h('span',{class:'ava none',title:'Без исполнителя'},'?'))
         : h('span',{class:'ava'+(author===S.me?' me':''),title:'Поставил(а): '+nameOf(author)},initials(nameOf(author)))));
@@ -1916,7 +1961,8 @@ function renderHead(t){
     }
     longRow=h('div',{class:'long-row'},...items);
   }
-  const parts=[title,h('div',{class:'t-by'},byEl,asgEl),h('div',{class:'pills'},brandPill,duePill,prioPill,sizePill),sizeRow,longRow].filter(Boolean);
+  const focusRow=t.focusMs>=60000?h('div',{class:'focus-row'},h('span',{class:'dp-k'},'В фокусе'),h('b',{class:'mono'},fmtFocus(t.focusMs)),t.pomos?h('span',{},'· '+t.pomos+' '+plural(t.pomos,'помидор','помидора','помидоров')):null,t.size?h('span',{class:'ro'},'при оценке '+sizeH(t.size)):null):null;
+  const parts=[title,h('div',{class:'t-by'},byEl,asgEl),h('div',{class:'pills'},brandPill,duePill,prioPill,sizePill),sizeRow,longRow,focusRow].filter(Boolean);
   if(isHeadUser()&&S.mode==='server'){
     const x=tStats(t);
     parts.push(h('div',{class:'t-stats'},

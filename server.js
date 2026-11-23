@@ -319,11 +319,13 @@ async function api(req, res, url) {
         if (!okHead && !okExec && !okRequester) return send(res, 403, { error: 'Нельзя сменить статус' });
       }
       if ('resultLink' in b && !canExec(a, t)) return send(res, 403, { error: 'Только исполнитель' });
+      if ('focusAdd' in b && t.assignee !== a.user.id && !a.admin) return send(res, 403, { error: 'Время в фокусе пишет исполнитель' });
       if ('createdBy' in b && !isHead(a)) return send(res, 403, { error: 'Только руководитель' });
       const before = t.status;
       const next = cleanTask(b, t);
       if (isHead(a) && typeof b.createdBy === 'string' && db.users[b.createdBy]) next.createdBy = b.createdBy;
       if ('assignee' in b) next.assignee = b.assignee === null ? null : b.assignee;
+      if ('focusAdd' in b) { const ms = Math.round(Number(b.focusAdd)); if (ms > 0 && ms <= 3 * 3600e3) next.focusMs = (t.focusMs || 0) + ms; if (b.pomo === true) next.pomos = (t.pomos || 0) + 1; }
       const now = Date.now();
       next.updatedAt = now;
       if (next.status !== before) {
