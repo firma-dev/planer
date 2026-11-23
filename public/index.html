@@ -650,6 +650,34 @@ html{overflow-y:scroll;scrollbar-gutter:stable}
 .focus-row b{font-size:13px}
 .focus-b{font:600 11px "JetBrains Mono",monospace;color:var(--accent-ink);white-space:nowrap}
 @media (max-width:560px){ .pomo{left:12px;bottom:12px;width:auto;right:12px} }
+
+/* ===== режим фокуса ===== */
+html.zen-open{overflow:hidden;scrollbar-gutter:auto}
+.zen{position:fixed;inset:0;z-index:200;background:#0d0906;overflow:hidden;opacity:0;transition:opacity .5s ease;cursor:none;display:grid;place-items:center;color:#f3d9bd;font-family:Manrope,system-ui,sans-serif}
+.zen.on{opacity:1}
+.zen.awake{cursor:default}
+.zen-glow{position:absolute;border-radius:50%;pointer-events:none;filter:blur(60px);will-change:transform,opacity}
+.zen-glow.g1{width:90vmax;height:90vmax;left:50%;top:58%;margin:-45vmax 0 0 -45vmax;background:radial-gradient(closest-side,rgba(255,150,70,.30),rgba(255,120,50,.12) 45%,rgba(255,110,40,0) 75%);animation:zenBreath 9s ease-in-out infinite alternate,zenDrift 31s ease-in-out infinite alternate}
+.zen-glow.g2{width:60vmax;height:60vmax;left:22%;top:30%;margin:-30vmax 0 0 -30vmax;background:radial-gradient(closest-side,rgba(255,196,120,.16),rgba(255,170,90,0) 70%);animation:zenDrift2 23s ease-in-out infinite alternate}
+.zen-blik{position:absolute;inset:-20%;pointer-events:none;background:linear-gradient(115deg,transparent 42%,rgba(255,226,190,.055) 49%,rgba(255,240,215,.09) 50%,rgba(255,226,190,.055) 51%,transparent 58%);animation:zenBlik 17s ease-in-out infinite;mix-blend-mode:screen}
+.zen[data-mode="short"] .zen-glow.g1,.zen[data-mode="long"] .zen-glow.g1{background:radial-gradient(closest-side,rgba(255,180,110,.20),rgba(255,150,80,.08) 45%,rgba(255,140,70,0) 75%)}
+.zen:not(.run) .zen-glow{animation-play-state:paused;opacity:.6}
+.zen-c{position:relative;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
+.zen-m{font-size:11px;font-weight:600;letter-spacing:.32em;text-transform:uppercase;color:rgba(243,217,189,.28)}
+.zen-t{font:400 46px/1 "JetBrains Mono",monospace;letter-spacing:.06em;color:rgba(255,224,192,.62);text-shadow:0 0 24px rgba(255,150,80,.25)}
+.zen:not(.run) .zen-t{color:rgba(255,224,192,.38)}
+.zen-line{width:120px;height:1px;background:rgba(243,217,189,.10);margin-top:6px;overflow:hidden}
+.zen-line i{display:block;height:100%;background:rgba(255,170,100,.55);transition:width 1s linear}
+.zen-task{font-size:12.5px;color:rgba(243,217,189,.32);max-width:60vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:1em}
+.zen-ctl{position:absolute;left:0;right:0;bottom:36px;display:flex;justify-content:center;gap:10px;opacity:0;transition:opacity .4s}
+.zen.awake .zen-ctl{opacity:1}
+.zen-btn{border:1px solid rgba(243,217,189,.14);background:rgba(255,255,255,.02);color:rgba(243,217,189,.55);border-radius:999px;padding:7px 16px;font:500 12.5px Manrope,sans-serif;cursor:pointer}
+.zen-btn:hover{color:rgba(255,230,205,.9);border-color:rgba(243,217,189,.3)}
+@keyframes zenBreath{from{opacity:.75;transform:scale(.96)}to{opacity:1;transform:scale(1.04)}}
+@keyframes zenDrift{0%{translate:-3vmax 1vmax}50%{translate:2vmax -2vmax}100%{translate:4vmax 2vmax}}
+@keyframes zenDrift2{0%{translate:0 0;opacity:.6}100%{translate:30vmax 18vmax;opacity:1}}
+@keyframes zenBlik{0%{transform:translateX(-35%)}60%,100%{transform:translateX(35%)}}
+@media (prefers-reduced-motion:reduce){ .zen-glow,.zen-blik{animation:none} }
 /* ===== загрузка ===== */
 .wk-p:hover{box-shadow:0 2px 8px -2px rgba(0,0,0,.25)}
 .wk-c:hover{background:#EDEAE4}
@@ -1144,6 +1172,33 @@ const POMO=(()=>{
   const leftMs=()=>st.endAt?Math.max(0,st.endAt-Date.now()):st.left;
   const fmt=ms=>{ const t=Math.ceil(ms/1000); return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0'); };
   let node, tEl, mEl, pBtn, dots, bar, taskRow, baseTitle=document.title;
+  let zen=null, zT, zM, zTask, zBar, zP, zIdle;
+  function zenOpen(){
+    if(!zen){
+      zT=h('div',{class:'zen-t'}); zM=h('div',{class:'zen-m'}); zTask=h('div',{class:'zen-task'}); zBar=h('i');
+      zP=h('button',{class:'zen-btn',onclick:e=>{ e.stopPropagation(); toggle(); }});
+      zen=h('div',{class:'zen',role:'dialog','aria-label':'Режим фокуса'},
+        h('div',{class:'zen-glow g1'}),h('div',{class:'zen-glow g2'}),h('div',{class:'zen-blik'}),
+        h('div',{class:'zen-c'},zM,zT,h('div',{class:'zen-line'},zBar),zTask),
+        h('div',{class:'zen-ctl'},zP,h('button',{class:'zen-btn',onclick:e=>{ e.stopPropagation(); zenClose(); }},'Выйти · Esc')));
+      const wake=()=>{ zen.classList.add('awake'); clearTimeout(zIdle); zIdle=setTimeout(()=>zen.classList.remove('awake'),2500); };
+      zen.addEventListener('mousemove',wake); zen.addEventListener('touchstart',wake,{passive:true});
+      zen.addEventListener('dblclick',zenClose);
+    }
+    document.documentElement.classList.add('zen-open'); document.body.append(zen); requestAnimationFrame(()=>zen.classList.add('on'));
+    zen.classList.add('awake'); clearTimeout(zIdle); zIdle=setTimeout(()=>zen.classList.remove('awake'),2500);
+    document.addEventListener('keydown',zenKey);
+    try{ if(document.documentElement.requestFullscreen&&!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{}); }catch(e){}
+    paint();
+  }
+  function zenClose(){
+    if(!zen||!zen.isConnected) return;
+    zen.classList.remove('on'); document.removeEventListener('keydown',zenKey); document.documentElement.classList.remove('zen-open');
+    setTimeout(()=>{ if(zen&&!zen.classList.contains('on')) zen.remove(); },500);
+    try{ if(document.fullscreenElement) document.exitFullscreen().catch(()=>{}); }catch(e){}
+  }
+  function zenKey(e){ if(e.key==='Escape') zenClose(); if(e.key===' '){ e.preventDefault(); toggle(); } }
+  document.addEventListener('fullscreenchange',()=>{ if(!document.fullscreenElement&&zen&&zen.classList.contains('on')) zenClose(); });
   function beep(){ try{ const a=new (window.AudioContext||window.webkitAudioContext)(); [0,.25,.5].forEach(d=>{ const o=a.createOscillator(), g=a.createGain(); o.frequency.value=880; o.connect(g); g.connect(a.destination); g.gain.setValueAtTime(.0001,a.currentTime+d); g.gain.exponentialRampToValueAtTime(.25,a.currentTime+d+.02); g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+d+.2); o.start(a.currentTime+d); o.stop(a.currentTime+d+.22); }); }catch(e){} }
   // записать в задачу время фокуса с начала текущего отрезка; seg защищает от двойной записи из нескольких вкладок
   function flush(full){
@@ -1168,6 +1223,9 @@ const POMO=(()=>{
   function paint(){
     const ms=leftMs(), run=!!st.endAt;
     document.title=run?(st.mode==='focus'?'● ':'○ ')+fmt(ms)+' · '+baseTitle:baseTitle;
+    if(zen&&zen.isConnected){ zT.textContent=fmt(ms); zM.textContent=run?NAME[st.mode]:'пауза'; zen.dataset.mode=st.mode; zen.classList.toggle('run',run);
+      zBar.style.width=(100-ms/(LEN[st.mode]*600))+'%'; zP.textContent=run?'Пауза':'Продолжить';
+      const zt=st.taskId&&S.tasks.find(x=>x.id===st.taskId); zTask.textContent=zt?zt.title:''; }
     if(!node) return;
     tEl.textContent=fmt(ms); mEl.textContent=NAME[st.mode];
     node.dataset.mode=st.mode; node.classList.toggle('run',run);
@@ -1204,7 +1262,7 @@ const POMO=(()=>{
       tEl=h('span',{class:'pomo-t mono'}); mEl=h('button',{class:'pomo-m',title:'Сменить: фокус / перерыв',onclick:cycle});
       pBtn=h('button',{class:'pomo-b',onclick:toggle}); dots=h('span',{class:'pomo-d'}); bar=h('i'); taskRow=h('div',{class:'pomo-task'});
       const ico=h('span',{class:'pomo-ico','aria-hidden':'true'}); ico.innerHTML='<svg viewBox="0 0 20 20" width="18" height="18"><circle cx="10" cy="11.5" r="7.5" fill="var(--accent)"/><path d="M10 4.5c-1-1.6-2.6-2-4-1.6 1 .4 1.8 1.1 2.2 2M10 4.5c1-1.6 2.6-2 4-1.6-1 .4-1.8 1.1-2.2 2" stroke="var(--ok)" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>';
-      node=h('div',{class:'pomo',role:'timer'},h('span',{class:'pomo-bar'},bar),taskRow,h('div',{class:'pomo-row'},ico,h('div',{class:'pomo-txt'},mEl,tEl),dots,pBtn,h('button',{class:'pomo-b ghost',title:'Сбросить','aria-label':'Сбросить',onclick:reset},'↺')));
+      node=h('div',{class:'pomo',role:'timer'},h('span',{class:'pomo-bar'},bar),taskRow,h('div',{class:'pomo-row'},ico,h('div',{class:'pomo-txt'},mEl,tEl),dots,pBtn,h('button',{class:'pomo-b ghost',title:'Сбросить','aria-label':'Сбросить',onclick:reset},'↺'),(()=>{ const zb=h('button',{class:'pomo-b ghost',title:'Режим фокуса — только таймер','aria-label':'Режим фокуса',onclick:zenOpen}); zb.innerHTML='<svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="10" cy="10" r="3.2"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.3 4.3l1.4 1.4M14.3 14.3l1.4 1.4M4.3 15.7l1.4-1.4M14.3 5.7l1.4-1.4"/></svg>'; return zb; })()));
       node.addEventListener('dragover',e=>{ e.preventDefault(); node.classList.add('drop'); });
       node.addEventListener('dragleave',e=>{ if(!node.contains(e.relatedTarget)) node.classList.remove('drop'); });
       node.addEventListener('drop',e=>{ e.preventDefault(); node.classList.remove('drop'); const id=e.dataTransfer.getData('text/plain'); const t=S.tasks.find(x=>x.id===id); if(!t) return;
